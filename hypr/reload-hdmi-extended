@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+pkill -x waybar 2>/dev/null || true
+pkill -x swaybg 2>/dev/null || true
+
+# Hyprland can keep HDMI visible internally while failing to advertise it as a
+# wl_output to layer-shell clients after switching from mirror to extended mode.
+# A short disable/enable cycle forces the Wayland output global to be republished.
+hyprctl keyword monitor HDMI-A-1,disable
+sleep 0.8
+hyprctl keyword monitor HDMI-A-1,1920x1080@60,1280x0,1.5
+sleep 0.8
+
+hyprctl dispatch exec "swaybg -o eDP-1 -i /home/muradkant/Pictures/background.jpg -o HDMI-A-1 -i /home/muradkant/Pictures/background.jpg"
+hyprctl dispatch exec "waybar"

@@ -1,0 +1,6 @@
+*.elc
+*.eln
+eln-cache/
+elpa/
+ido.last
+plugin/packer_compiled.lua
