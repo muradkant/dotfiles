@@ -46,6 +46,11 @@
 (global-display-line-numbers-mode)
 (set-face-attribute 'default nil :height 170)
 
+;; Ensure Emacs subprocesses can find Rust tools installed by rustup.
+(let ((cargo-bin (expand-file-name "~/.cargo/bin")))
+  (add-to-list 'exec-path cargo-bin)
+  (setenv "PATH" (concat cargo-bin path-separator (getenv "PATH"))))
+
 ;; IDO mode
 (ido-mode 1)
 (ido-everywhere 1)
