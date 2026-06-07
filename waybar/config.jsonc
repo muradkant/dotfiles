@@ -1,10 +1,10 @@
 {
   "output": ["eDP-1", "HDMI-A-1"],
   "layer": "top",
-  "position": "top",
-  "height": 32,
+  "position": "bottom",
+  "height": 24,
   "spacing": 0,
-  "modules-left": ["custom/power", "hyprland/workspaces"],
+  "modules-left": ["hyprland/workspaces", "custom/power"],
   "modules-center": ["mpris"],
   "modules-right": ["cpu", "memory", "backlight", "pulseaudio", "network", "battery", "hyprland/language", "tray", "clock"],
 

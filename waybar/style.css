@@ -1,62 +1,70 @@
 * {
   font-family: "JetBrainsMono Nerd Font", "Symbols Nerd Font", sans-serif;
   font-size: 12px;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  text-shadow: none;
+  min-height: 0;
 }
 
 window#waybar {
-  background: linear-gradient(180deg, #1a1b26 0%, #16161e 100%);
+  background: #000000;
   border: none;
+  color: #ffffff;
 }
 
 tooltip {
-  background: #1a1b26;
-  border: 1px solid #7aa2f7;
-  border-radius: 8px;
+  background: #000000;
+  border: 1px solid #666666;
+  border-radius: 0;
+  color: #ffffff;
 }
 
 #custom-power {
   color: #f7768e;
-  padding: 0 14px;
-  font-size: 14px;
+  padding: 0 8px;
+  font-size: 12px;
 }
 
 #custom-power:hover {
   color: #ff9e64;
+  background: #333333;
 }
 
 #workspaces button {
-  color: #565f89;
-  background: transparent;
-  padding: 0 6px;
-  margin: 5px 3px;
+  color: #888888;
+  background: #222222;
+  padding: 0 8px;
+  margin: 0;
   border: none;
-  border-radius: 50%;
+  border-radius: 0;
   box-shadow: none;
-  min-width: 22px;
-  transition: background-color 120ms ease, color 120ms ease;
+  min-width: 24px;
+  transition: none;
 }
 
 #workspaces button.active {
-  color: #1a1b26;
-  background: linear-gradient(135deg, #7aa2f7, #bb9af7);
+  color: #ffffff;
+  background: #285577;
 }
 
 #workspaces button:hover {
-  color: #c0caf5;
-  background: rgba(122, 162, 247, 0.12);
+  color: #ffffff;
+  background: #333333;
   border: none;
   box-shadow: none;
   text-shadow: none;
 }
 
 #workspaces button.active:hover {
-  color: #1a1b26;
-  background: linear-gradient(135deg, #7aa2f7, #bb9af7);
+  color: #ffffff;
+  background: #285577;
 }
 
 #mpris {
   color: #9ece6a;
-  padding: 0 15px;
+  padding: 0 10px;
 }
 
 #mpris.paused {
@@ -73,12 +81,12 @@ tooltip {
 #clock { color: #c0caf5; }
 
 #cpu, #memory, #backlight, #pulseaudio, #network, #battery, #language, #clock {
-  padding: 0 10px;
+  padding: 0 8px;
 }
 
 #language {
   font-family: "Noto Color Emoji", "JetBrainsMono Nerd Font", "Symbols Nerd Font", sans-serif;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 #pulseaudio.muted { color: #f7768e; }
@@ -88,7 +96,7 @@ tooltip {
 #battery.charging { color: #73daca; }
 
 #tray {
-  padding: 0 8px;
+  padding: 0 6px;
 }
 
 #tray > .passive {
