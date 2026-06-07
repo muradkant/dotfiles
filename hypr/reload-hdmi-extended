@@ -10,5 +10,5 @@ sleep 0.8
 hyprctl keyword monitor HDMI-A-1,1920x1080@60,1280x0,1.5
 sleep 0.8
 
-hyprctl dispatch exec "swaybg -o eDP-1 -i /home/muradkant/Pictures/background.jpg -o HDMI-A-1 -i /home/muradkant/Pictures/background.jpg"
+hyprctl dispatch exec "swaybg -o eDP-1 -i /home/muradkant/Pictures/background.png -o HDMI-A-1 -i /home/muradkant/Pictures/background.png"
 hyprctl dispatch exec "waybar"
