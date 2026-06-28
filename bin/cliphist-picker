@@ -1,0 +1,151 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+shopt -u patsub_replacement 2>/dev/null || true
+
+readonly cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/cliphist"
+readonly thumb_dir="$cache_root/thumbs"
+readonly wofi_config="$HOME/.config/wofi/clipboard.conf"
+readonly wofi_style="$HOME/.config/wofi/clipboard.css"
+runtime_root="${XDG_RUNTIME_DIR:-/tmp}"
+[[ -w "$runtime_root" ]] || runtime_root="/tmp"
+readonly runtime_root
+
+fail() {
+    printf 'cliphist-picker: %s\n' "$1" >&2
+    if command -v notify-send >/dev/null 2>&1; then
+        notify-send --app-name="Clipboard" "Clipboard picker" "$1"
+    fi
+    exit 1
+}
+
+for dependency in cliphist wl-copy wofi magick; do
+    command -v "$dependency" >/dev/null 2>&1 ||
+        fail "Required command not found: $dependency"
+done
+
+[[ -f "$wofi_config" ]] || fail "Missing Wofi config: $wofi_config"
+[[ -f "$wofi_style" ]] || fail "Missing Wofi stylesheet: $wofi_style"
+
+mkdir -p "$thumb_dir"
+chmod 700 "$cache_root" "$thumb_dir"
+
+work_dir="$(mktemp -d "$runtime_root/cliphist-picker.XXXXXX")"
+trap 'rm -rf -- "$work_dir"' EXIT
+
+history_file="$work_dir/history"
+menu_file="$work_dir/menu"
+id_file="$work_dir/ids"
+
+cliphist list >"$history_file"
+[[ -s "$history_file" ]] || fail "Clipboard history is empty."
+
+escape_markup() {
+    local value="$1"
+    value="${value//&/&amp;}"
+    value="${value//</&lt;}"
+    value="${value//>/&gt;}"
+    printf '%s' "$value"
+}
+
+generate_thumbnail() {
+    local id="$1"
+    local destination="$2"
+    local temporary="${destination}.tmp.$BASHPID"
+
+    if printf '%s\t' "$id" |
+        cliphist decode |
+        magick - -auto-orient -thumbnail '144x96>' -strip "png:$temporary"; then
+        mv -f -- "$temporary" "$destination"
+    else
+        rm -f -- "$temporary"
+    fi
+
+    return 0
+}
+
+declare -A live_image_ids=()
+declare -a pending_ids=()
+declare -a pending_thumbs=()
+visible_count=0
+
+while IFS=$'\t' read -r id preview; do
+    [[ "$id" =~ ^[0-9]+$ ]] || continue
+
+    # Browsers frequently store this HTML representation alongside the actual
+    # image. The separate image entry is the useful one in a visual picker.
+    if [[ "$preview" == '<meta http-equiv='* && "$preview" == *'<img '* ]]; then
+        continue
+    fi
+
+    if [[ "$preview" =~ ^\[\[\ binary\ data\ (.+)\ (png|jpg|jpeg|bmp|gif|webp)\ ([0-9]+x[0-9]+)\ \]\]$ ]]; then
+        size="${BASH_REMATCH[1]}"
+        format="${BASH_REMATCH[2]^^}"
+        dimensions="${BASH_REMATCH[3]}"
+        thumbnail="$thumb_dir/$id.png"
+        live_image_ids["$id"]=1
+
+        if [[ ! -s "$thumbnail" ]]; then
+            pending_ids+=("$id")
+            pending_thumbs+=("$thumbnail")
+        fi
+
+        printf 'img:%s:text:<span foreground="#7dcfff">[IMG]</span>  %s · %s · %s\n' \
+            "$thumbnail" "$format" "$dimensions" "$size" >>"$menu_file"
+    else
+        escaped_preview="$(escape_markup "$preview")"
+        if [[ "$preview" =~ ^https?:// ]]; then
+            printf 'text:<span foreground="#9ece6a">[URL]</span>  %s\n' \
+                "$escaped_preview" >>"$menu_file"
+        else
+            printf 'text:<span foreground="#bb9af7">[TXT]</span>  %s\n' \
+                "$escaped_preview" >>"$menu_file"
+        fi
+    fi
+
+    printf '%s\n' "$id" >>"$id_file"
+    ((visible_count += 1))
+done <"$history_file"
+
+[[ "$visible_count" -gt 0 ]] || fail "Clipboard history has no displayable entries."
+
+# First launch may need to create many thumbnails. Bound concurrency keeps that
+# initial build quick without flooding the machine with ImageMagick processes.
+running_jobs=0
+for index in "${!pending_ids[@]}"; do
+    generate_thumbnail "${pending_ids[$index]}" "${pending_thumbs[$index]}" &
+    ((running_jobs += 1))
+
+    if ((running_jobs >= 6)); then
+        wait -n || true
+        ((running_jobs -= 1))
+    fi
+done
+wait || true
+
+# Remove thumbnails whose cliphist entries have expired.
+while IFS= read -r -d '' thumbnail; do
+    image_id="${thumbnail##*/}"
+    image_id="${image_id%.png}"
+    if [[ -z "${live_image_ids[$image_id]+present}" ]]; then
+        rm -f -- "$thumbnail"
+    fi
+done < <(find "$thumb_dir" -maxdepth 1 -type f -name '*.png' -print0)
+
+if ! selected_line="$(
+    GDK_BACKEND=wayland wofi \
+        --dmenu \
+        --conf "$wofi_config" \
+        --style "$wofi_style" \
+        --prompt "CLIPBOARD  /  $visible_count ITEMS" \
+        <"$menu_file"
+)"; then
+    exit 0
+fi
+
+[[ "$selected_line" =~ ^[0-9]+$ ]] || fail "Wofi returned an invalid selection."
+
+clip_id="$(sed -n "$((selected_line + 1))p" "$id_file")"
+[[ "$clip_id" =~ ^[0-9]+$ ]] || fail "Could not resolve the selected clipboard entry."
+
+printf '%s\t' "$clip_id" | cliphist decode | wl-copy
