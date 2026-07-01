@@ -1,0 +1,14 @@
+{
+  "theme": "dark",
+  "defaultProvider": "opencode-go",
+  "defaultModel": "glm-5.2",
+  "defaultThinkingLevel": "high",
+  "extensions": [
+    "~/.pi/agent/all-tools.ts",
+    "~/.pi/agent/extensions/preset.ts"
+  ],
+  "packages": [
+    "npm:pi-lens@3.8.62",
+    "npm:pi-web-access@0.13.0"
+  ]
+}

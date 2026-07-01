@@ -4,3 +4,7 @@ eln-cache/
 elpa/
 ido.last
 plugin/packer_compiled.lua
+
+# Live Pi credentials, sessions, packages, and generated state.
+# The portable, secret-free source lives in pi/.
+.pi/

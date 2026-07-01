@@ -29,6 +29,14 @@ cp /tmp/dotfiles/background.jpg ~/Pictures/background.jpg
 cp /tmp/dotfiles/lockscreen.jpg ~/Pictures/lockscreen.jpg
 ```
 
+Install the portable Pi profile separately. This installs its pinned packages,
+generates presets from the tracked Markdown profiles, and leaves credentials
+and sessions untouched:
+
+```sh
+/tmp/dotfiles/pi/install.sh
+```
+
 Reload Hyprland after copying:
 
 ```sh
@@ -46,3 +54,4 @@ hyprctl reload
 - `hypr/hyprtoolkit.conf` gives Hypr ecosystem applications the same palette,
   typography, and square geometry as Waybar and the Wofi clipboard picker.
 - Empty workspace buttons are not forced; only active workspaces should appear.
+- `pi/` is the portable, secret-free source for the global Pi profile.
