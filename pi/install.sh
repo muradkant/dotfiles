@@ -6,6 +6,7 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 target_home="${HOME}"
 install_packages=1
 with_opencode=0
+with_codex=0
 with_philosophical=0
 
 usage() {
@@ -16,6 +17,7 @@ Options:
   --home PATH            Install under another home directory
   --skip-packages        Do not install the pinned Pi packages
   --with-opencode        Also install matching OpenCode agents
+  --with-codex           Also install matching Codex profiles
   --with-philosophical   Also synchronize ~/Philosophical/outputs
   -h, --help             Show this help
 EOF
@@ -33,6 +35,9 @@ while (($# > 0)); do
 			;;
 		--with-opencode)
 			with_opencode=1
+			;;
+		--with-codex)
+			with_codex=1
 			;;
 		--with-philosophical)
 			with_philosophical=1
@@ -99,9 +104,12 @@ install_managed_file() {
 	install -D -m 0644 -- "$source" "$destination"
 }
 
-temporary_presets="$(mktemp)"
-trap 'rm -f -- "$temporary_presets"' EXIT
+temporary_root="$(mktemp -d)"
+trap 'rm -rf -- "$temporary_root"' EXIT
+temporary_presets="$temporary_root/presets.json"
+temporary_codex="$temporary_root/codex"
 node "$script_dir/scripts/render-presets.mjs" "$temporary_presets"
+node "$script_dir/scripts/render-codex-profiles.mjs" "$temporary_codex"
 
 install_managed_file "$script_dir/agent/settings.json" "$agent_dir/settings.json" "settings.json"
 install_managed_file "$script_dir/agent/all-tools.ts" "$agent_dir/all-tools.ts" "all-tools.ts"
@@ -117,6 +125,16 @@ if ((with_opencode)); then
 	opencode_agents="$target_home/.config/opencode/agents"
 	install -D -m 0644 -- "$script_dir/profiles/Rust Analyst.md" "$opencode_agents/Rust Analyst.md"
 	install -D -m 0644 -- "$script_dir/profiles/Brainstormer.md" "$opencode_agents/Brainstormer.md"
+fi
+
+if ((with_codex)); then
+	codex_home="$target_home/.codex"
+	for profile in rust-analyst brainstormer; do
+		install_managed_file \
+			"$temporary_codex/$profile.config.toml" \
+			"$codex_home/$profile.config.toml" \
+			"codex/$profile.config.toml"
+	done
 fi
 
 if ((with_philosophical)); then
@@ -190,6 +208,7 @@ fi
 
 verify_args=(--home "$target_home")
 ((install_packages)) && verify_args+=(--require-packages)
+((with_codex)) && verify_args+=(--require-codex-profiles)
 node "$script_dir/scripts/verify.mjs" "${verify_args[@]}"
 
 if [[ -n "$backup_dir" ]]; then

@@ -31,11 +31,18 @@ distrobox enter "$name" -- bash -lc '
 	export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 	npm install --global --prefix "$HOME/.local" --ignore-scripts \
 		@earendil-works/pi-coding-agent@0.80.2
+	codex_version="$(node -p \
+		'\''require("/opt/muradkant-pi-profile/external-tools.json").codex'\'')"
+	codex_prefix="$HOME/.local/share/muradkant-pi-profile/codex"
+	npm install --prefix "$codex_prefix" --ignore-scripts \
+		"@openai/codex@$codex_version"
 	curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs |
 		sh -s -- -y --profile minimal \
 			--component rust-analyzer,rust-docs,clippy,rustfmt
-	/opt/muradkant-pi-profile/install.sh --with-opencode
+	/opt/muradkant-pi-profile/install.sh --with-opencode --with-codex
 	/opt/muradkant-pi-profile/tests/smoke.sh "$HOME"
+	CODEX_BIN="$codex_prefix/node_modules/.bin/codex" \
+		/opt/muradkant-pi-profile/tests/codex-profiles.sh "$HOME"
 	rust-analyzer --version
 	installed_components="$(rustup component list --installed)"
 	for component in rust-analyzer rust-docs clippy rustfmt; do

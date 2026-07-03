@@ -2,8 +2,8 @@
 
 Portable source for the global Pi configuration. It enables every registered
 tool by default, installs pinned releases of Pi Lens and Pi Web Access, and
-provides the `Rust Analyst` and `Brainstormer` presets. It also installs the
-official Browse CLI skill used by the live profile.
+provides the `Rust Analyst` and `Brainstormer` profiles for Pi, OpenCode, and
+Codex. It also installs the official Browse CLI skill used by the live profile.
 
 ## Prerequisite
 
@@ -39,8 +39,26 @@ To install matching OpenCode agent files:
 ./pi/install.sh --with-opencode
 ```
 
-For this dotfiles checkout, synchronize Pi, OpenCode, and the historical files
-under `~/Philosophical/outputs` with:
+To install matching named Codex profiles:
+
+```sh
+./pi/install.sh --with-codex
+```
+
+Launch them as main Codex sessions:
+
+```sh
+codex --profile rust-analyst
+codex --profile brainstormer
+```
+
+The generated `~/.codex/*.config.toml` files add the canonical Markdown as
+`developer_instructions`. They inherit Codex's normal base instructions and
+the rest of `~/.codex/config.toml`; the installer does not copy authentication,
+sessions, or other Codex state.
+
+For this dotfiles checkout, synchronize Pi, OpenCode, Codex, and the historical
+files under `~/Philosophical/outputs` with:
 
 ```sh
 ./pi/sync-live.sh
@@ -68,7 +86,8 @@ rustup component add rust-analyzer rust-docs clippy rustfmt
 ## Editing profiles
 
 The tracked Markdown files under `pi/profiles/` are canonical. After editing
-them, run `./pi/sync-live.sh`. Do not edit generated `presets.json` directly.
+them, run `./pi/sync-live.sh`. Do not edit generated `presets.json` or Codex
+profile TOML files directly.
 
 ## Verification
 
@@ -85,5 +104,8 @@ Run the stronger disposable Distrobox test:
 ```
 
 Both tests verify package and Browse CLI versions, the official Browse skill,
-generated preset contents, portable paths, the complete 21-tool set, preset
-loading, and preservation of explicit CLI tool restrictions.
+generated profile contents, portable paths, the complete 21-tool set, Pi
+preset loading, and preservation of explicit CLI tool restrictions. They also
+select both named Codex profiles and verify that their canonical instructions
+reach Codex's model-visible prompt input. The Distrobox test installs the pinned
+official Codex CLI in the disposable home before running that check.

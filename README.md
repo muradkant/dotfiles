@@ -29,12 +29,12 @@ cp /tmp/dotfiles/background.jpg ~/Pictures/background.jpg
 cp /tmp/dotfiles/lockscreen.jpg ~/Pictures/lockscreen.jpg
 ```
 
-Install the portable Pi profile separately. This installs its pinned packages,
-generates presets from the tracked Markdown profiles, and leaves credentials
+Install the portable coding-agent profile separately. This installs Pi's pinned
+packages, generates profiles from the tracked Markdown, and leaves credentials
 and sessions untouched:
 
 ```sh
-/tmp/dotfiles/pi/install.sh
+/tmp/dotfiles/pi/install.sh --with-opencode --with-codex
 ```
 
 Reload Hyprland after copying:
@@ -54,4 +54,5 @@ hyprctl reload
 - `hypr/hyprtoolkit.conf` gives Hypr ecosystem applications the same palette,
   typography, and square geometry as Waybar and the Wofi clipboard picker.
 - Empty workspace buttons are not forced; only active workspaces should appear.
-- `pi/` is the portable, secret-free source for the global Pi profile.
+- `pi/` is the portable, secret-free source for the Pi, OpenCode, and Codex
+  profiles.

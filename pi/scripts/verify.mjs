@@ -4,18 +4,25 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+	codexProfiles,
+	expectedCodexProfile,
+} from "./render-codex-profiles.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const profileRoot = resolve(scriptDir, "..");
 
 let targetHome = homedir();
 let requirePackages = false;
+let requireCodexProfiles = false;
 for (let index = 2; index < process.argv.length; index += 1) {
 	const argument = process.argv[index];
 	if (argument === "--home") {
 		targetHome = resolve(process.argv[++index]);
 	} else if (argument === "--require-packages") {
 		requirePackages = true;
+	} else if (argument === "--require-codex-profiles") {
+		requireCodexProfiles = true;
 	} else {
 		throw new Error(`Unknown argument: ${argument}`);
 	}
@@ -158,6 +165,18 @@ if (requirePackages) {
 
 	const browseExecutable = join(targetHome, ".local", "bin", "browse");
 	if (!existsSync(browseExecutable)) fail("Browse CLI executable is not linked into ~/.local/bin");
+}
+
+if (requireCodexProfiles) {
+	for (const profile of codexProfiles) {
+		const installedPath = join(targetHome, ".codex", `${profile.slug}.config.toml`);
+		if (!existsSync(installedPath)) {
+			fail(`Required Codex profile is not installed: ${profile.slug}`);
+		}
+		if (readFileSync(installedPath, "utf8") !== expectedCodexProfile(profile)) {
+			fail(`Installed Codex profile differs from canonical Markdown: ${profile.slug}`);
+		}
+	}
 }
 
 console.log(`Pi profile verified for ${targetHome}`);
