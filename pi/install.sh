@@ -123,18 +123,20 @@ fi
 
 if ((with_opencode)); then
 	opencode_agents="$target_home/.config/opencode/agents"
-	install -D -m 0644 -- "$script_dir/profiles/Rust Analyst.md" "$opencode_agents/Rust Analyst.md"
-	install -D -m 0644 -- "$script_dir/profiles/Brainstormer.md" "$opencode_agents/Brainstormer.md"
+	while IFS= read -r profile_file; do
+		install -D -m 0644 -- "$profile_file" "$opencode_agents/$(basename -- "$profile_file")"
+	done < <(find "$script_dir/profiles" -maxdepth 1 -type f -name '*.md' | sort)
 fi
 
 if ((with_codex)); then
 	codex_home="$target_home/.codex"
-	for profile in rust-analyst brainstormer; do
+	while IFS= read -r codex_file; do
+		profile_slug="$(basename -- "$codex_file" .config.toml)"
 		install_managed_file \
-			"$temporary_codex/$profile.config.toml" \
-			"$codex_home/$profile.config.toml" \
-			"codex/$profile.config.toml"
-	done
+			"$codex_file" \
+			"$codex_home/$profile_slug.config.toml" \
+			"codex/$profile_slug.config.toml"
+	done < <(find "$temporary_codex" -maxdepth 1 -type f -name '*.config.toml' | sort)
 fi
 
 if ((with_philosophical)); then

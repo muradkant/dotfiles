@@ -11,6 +11,7 @@ const outputPath = process.argv[2];
 const profileFiles = [
 	["Rust Analyst", "Rust Analyst.md"],
 	["Brainstormer", "Brainstormer.md"],
+	["Systems Analyst", "Systems Analyst.md"],
 ];
 
 const presets = Object.fromEntries(

@@ -2,7 +2,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
 	codexProfiles,
@@ -100,13 +100,13 @@ const installedAllTools = readFileSync(join(agentDir, "all-tools.ts"), "utf8");
 if (sourceAllTools !== installedAllTools) fail("Installed all-tools extension differs from the profile");
 
 const presets = readJson(join(agentDir, "presets.json"));
-for (const name of ["Rust Analyst", "Brainstormer"]) {
+for (const name of ["Rust Analyst", "Brainstormer", "Systems Analyst"]) {
 	const source = readFileSync(join(profileRoot, "profiles", `${name}.md`), "utf8");
 	if (presets[name]?.instructions !== source) {
 		fail(`Installed "${name}" preset differs from its canonical Markdown profile`);
 	}
 }
-assertEqual(Object.keys(presets).sort(), ["Brainstormer", "Rust Analyst"], "Preset names");
+assertEqual(Object.keys(presets).sort(), ["Brainstormer", "Rust Analyst", "Systems Analyst"], "Preset names");
 
 const presetExtension = join(agentDir, "extensions", "preset.ts");
 if (!existsSync(presetExtension)) fail("Pi's bundled preset extension was not installed");

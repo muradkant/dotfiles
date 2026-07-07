@@ -17,6 +17,7 @@ mkdir -p "$fresh_home"
 [[ -f "$fresh_home/.config/opencode/agents/Brainstormer.md" ]]
 [[ -f "$fresh_home/.codex/rust-analyst.config.toml" ]]
 [[ -f "$fresh_home/.codex/brainstormer.config.toml" ]]
+[[ -f "$fresh_home/.codex/systems-analyst.config.toml" ]]
 
 "$script_dir/smoke.sh" "$fresh_home"
 "$script_dir/codex-profiles.sh" "$fresh_home"

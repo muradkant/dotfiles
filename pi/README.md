@@ -2,8 +2,9 @@
 
 Portable source for the global Pi configuration. It enables every registered
 tool by default, installs pinned releases of Pi Lens and Pi Web Access, and
-provides the `Rust Analyst` and `Brainstormer` profiles for Pi, OpenCode, and
-Codex. It also installs the official Browse CLI skill used by the live profile.
+provides the `Rust Analyst`, `Brainstormer`, and `Systems Analyst` profiles
+for Pi, OpenCode, and Codex. It also installs the official Browse CLI skill
+used by the live profile.
 
 ## Prerequisite
 
@@ -50,6 +51,7 @@ Launch them as main Codex sessions:
 ```sh
 codex --profile rust-analyst
 codex --profile brainstormer
+codex --profile systems-analyst
 ```
 
 The generated `~/.codex/*.config.toml` files add the canonical Markdown as
@@ -106,6 +108,6 @@ Run the stronger disposable Distrobox test:
 Both tests verify package and Browse CLI versions, the official Browse skill,
 generated profile contents, portable paths, the complete 21-tool set, Pi
 preset loading, and preservation of explicit CLI tool restrictions. They also
-select both named Codex profiles and verify that their canonical instructions
+select all three named Codex profiles and verify that their canonical instructions
 reach Codex's model-visible prompt input. The Distrobox test installs the pinned
 official Codex CLI in the disposable home before running that check.

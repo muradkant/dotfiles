@@ -52,5 +52,6 @@ NODE
 
 verify_profile rust-analyst "Rust Analyst.md"
 verify_profile brainstormer "Brainstormer.md"
+verify_profile systems-analyst "Systems Analyst.md"
 
-echo "Codex runtime test passed: both canonical profiles reached the model-visible prompt"
+echo "Codex runtime test passed: all three canonical profiles reached the model-visible prompt"

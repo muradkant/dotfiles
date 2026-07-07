@@ -10,6 +10,7 @@ const profileRoot = resolve(dirname(scriptPath), "..");
 export const codexProfiles = [
 	{ slug: "rust-analyst", source: "Rust Analyst.md" },
 	{ slug: "brainstormer", source: "Brainstormer.md" },
+	{ slug: "systems-analyst", source: "Systems Analyst.md" },
 ];
 
 export function renderCodexProfile(markdown) {
