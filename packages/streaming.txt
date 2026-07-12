@@ -1,0 +1,7 @@
+# Optional yt-stream-workspace runtime.
+ffmpeg
+iproute2
+pipewire-pulse
+wf-recorder
+wl-mirror
+wtype
