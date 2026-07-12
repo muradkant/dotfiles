@@ -34,6 +34,11 @@ lock_target="$(readlink -f "$HOME/.config/nvim/nvim-pack-lock.json")"
 [[ "$lock_target" == "$ROOT/nvim/nvim-pack-lock.json" ]]
 [[ ! -L "$HOME/.config/yt-stream-workspace/config" ]]
 [[ "$(stat -c %a "$HOME/.config/yt-stream-workspace/config")" == 600 ]]
+# Match the literal runtime expression copied from the component template.
+# shellcheck disable=SC2016
+grep -Fqx 'YTWS_WALLPAPER="$HOME/Pictures/background.jpg"' \
+    "$HOME/.config/yt-stream-workspace/config"
+[[ -e "$HOME/Pictures/background.jpg" ]]
 controller_target="$(readlink -f "$HOME/.local/bin/controller-mouse-game-guard")"
 expected_controller="$ROOT/components/linux-zhixu-controller-fix/scripts/controller-mouse-game-guard"
 [[ "$controller_target" == "$expected_controller" ]]
