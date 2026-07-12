@@ -1,20 +1,20 @@
-# Dotfiles
+# CachyOS dotfiles
 
-Personal CachyOS desktop configuration.
+The desktop I use: Hyprland, Waybar, Wofi, Kitty, Neovim, Emacs, Zellij, and a
+portable set of Pi/OpenCode/Codex agent profiles.
 
-## Install
+## Desktop installation
 
-Clone the repo somewhere temporary:
+Clone without mixing repository metadata into the home directory:
 
 ```sh
-git clone -b CachyOS git@github.com:muradkant/dotfiles.git /tmp/dotfiles
+git clone --branch CachyOS https://github.com/muradkant/dotfiles.git /tmp/dotfiles
 ```
 
-Copy the files into their live locations:
+Back up any live configuration you intend to replace, then install:
 
 ```sh
 cp /tmp/dotfiles/.bashrc ~/.bashrc
-
 mkdir -p ~/.config ~/.emacs.d ~/.local/bin ~/Pictures
 cp -a /tmp/dotfiles/hypr ~/.config/hypr
 cp -a /tmp/dotfiles/kitty ~/.config/kitty
@@ -27,32 +27,31 @@ cp -a /tmp/dotfiles/emacs/. ~/.emacs.d/
 cp -a /tmp/dotfiles/bin/. ~/.local/bin/
 cp /tmp/dotfiles/background.jpg ~/Pictures/background.jpg
 cp /tmp/dotfiles/lockscreen.jpg ~/Pictures/lockscreen.jpg
+hyprctl reload
 ```
 
-Install the portable coding-agent profile separately. This installs Pi's pinned
-packages, generates profiles from the tracked Markdown, and leaves credentials
-and sessions untouched:
+The copy is intentionally explicit: this repository reflects one machine and
+does not pretend that replacing another desktop wholesale is safe.
+
+## Agent profiles
+
+Pi's installer is separate because it pins packages, generates derived files,
+and preserves unmanaged credentials and sessions:
 
 ```sh
 /tmp/dotfiles/pi/install.sh --with-opencode --with-codex
 ```
 
-Reload Hyprland after copying:
+See [`pi/README.md`](pi/README.md) for prerequisites, profile behavior,
+credentials, synchronization, and disposable verification.
 
-```sh
-hyprctl reload
-```
+## Desktop character
 
-## Notes
-
-- `hypr/hyprland.conf` contains HDMI mirror and extended-monitor modes.
-- Extended mode maps laptop workspaces to `1-5` and HDMI workspaces to `6-10`.
-- `hypr/reload-hdmi-extended` repairs the live mirror-to-extension transition by
-  republishing the HDMI output before restarting Waybar and the wallpaper.
-- `bin/cliphist-picker` uses `cliphist`, `wl-clipboard`, `wofi`, and ImageMagick
-  to provide searchable clipboard history with cached image thumbnails.
-- `hypr/hyprtoolkit.conf` gives Hypr ecosystem applications the same palette,
-  typography, and square geometry as Waybar and the Wofi clipboard picker.
-- Empty workspace buttons are not forced; only active workspaces should appear.
-- `pi/` is the portable, secret-free source for the Pi, OpenCode, and Codex
-  profiles.
+- Laptop workspaces 1–5 and HDMI workspaces 6–10 support mirror and extended
+  modes; `hypr/reload-hdmi-extended` repairs the live transition.
+- `bin/cliphist-picker` combines Cliphist, wl-clipboard, Wofi, and ImageMagick
+  into searchable text and image history with cached thumbnails.
+- Hyprland ecosystem tools, Waybar, Wofi, and logout UI share one square,
+  i3-influenced visual language.
+- Only occupied or active workspace buttons appear.
+- `pi/` is portable and secret-free; generated runtime state is not tracked.
