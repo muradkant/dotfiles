@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+browser="${HERMES_CHROMIUM_BIN:-}"
+playwright_root="${PLAYWRIGHT_BROWSERS_PATH:-$HOME/.cache/ms-playwright}"
+port="${HERMES_CDP_UPSTREAM_PORT:-9223}"
+profile="${HERMES_CDP_PROFILE:-$HOME/.hermes/browser-cdp-profile}"
+
+if [[ -z "$browser" ]]; then
+    mapfile -t candidates < <(
+        find "$playwright_root" -maxdepth 3 -type f -path \
+            '*/chromium-*/chrome-linux*/chrome' -perm -u+x -print 2>/dev/null |
+            sort -V
+    )
+    ((${#candidates[@]})) || {
+        printf 'hermes-cdp-browser: no Playwright Chromium under %s\n' \
+            "$playwright_root" >&2
+        exit 1
+    }
+    browser="${candidates[-1]}"
+fi
+
+[[ -x "$browser" ]] || {
+    printf 'hermes-cdp-browser: not executable: %s\n' "$browser" >&2
+    exit 1
+}
+
+mkdir -p -- "$profile"
+exec "$browser" \
+    --headless=new \
+    --remote-debugging-address=127.0.0.1 \
+    --remote-debugging-port="$port" \
+    --user-data-dir="$profile" \
+    --no-first-run \
+    --no-default-browser-check \
+    --disable-dev-shm-usage \
+    --disable-gpu \
+    --noerrdialogs \
+    --ozone-platform=headless \
+    --ozone-override-screen-size=1280,720 \
+    about:blank

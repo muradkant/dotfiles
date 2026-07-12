@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+: "${SIGNAL_ACCOUNT:?set SIGNAL_ACCOUNT in ~/.config/dotfiles/services.env}"
+signal_cli="$(command -v signal-cli || true)"
+[[ -n "$signal_cli" ]] || {
+    printf 'signal-cli-http: signal-cli is not installed\n' >&2
+    exit 1
+}
+
+exec "$signal_cli" --account "$SIGNAL_ACCOUNT" daemon --http 127.0.0.1:8080

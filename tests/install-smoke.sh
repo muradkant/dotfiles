@@ -13,6 +13,9 @@ trap cleanup EXIT
 
 mkdir -p "$TEST_HOME"
 printf 'original bashrc\n' >"$TEST_HOME/.bashrc"
+mkdir -p "$TEST_HOME/.config/systemd/user"
+printf '[Service]\nExecStart=/usr/bin/true\n' \
+    >"$TEST_HOME/.config/systemd/user/hermes-gateway.service"
 
 export HOME="$TEST_HOME"
 export XDG_CACHE_HOME="$TEST_HOME/.cache"
@@ -21,10 +24,11 @@ export XDG_DATA_HOME="$TEST_HOME/.local/share"
 export XDG_STATE_HOME="$TEST_HOME/.local/state"
 export DOTFILES_SKIP_SESSION_IMPORT=1
 export DOTFILES_SKIP_PACKAGE_INSTALL=1
+export DOTFILES_SKIP_SERVICE_BUILDS=1
 export DOTFILES_SKIP_USER_SERVICES=1
 unset HYPRLAND_INSTANCE_SIGNATURE
 
-"$ROOT/install.sh" --streaming --controller
+"$ROOT/install.sh" --streaming --controller --services
 "$ROOT/verify.sh"
 
 backup="$(find "$XDG_STATE_HOME/dotfiles/backups" -type f -name .bashrc -print -quit)"
@@ -39,6 +43,12 @@ lock_target="$(readlink -f "$HOME/.config/nvim/nvim-pack-lock.json")"
 grep -Fqx 'YTWS_WALLPAPER="$HOME/Pictures/background.jpg"' \
     "$HOME/.config/yt-stream-workspace/config"
 [[ -e "$HOME/Pictures/background.jpg" ]]
+[[ -L "$HOME/.config/systemd/user/hermes-cdp.socket" ]]
+[[ -L "$HOME/.config/systemd/user/hermes-gateway.service.d/10-dotfiles.conf" ]]
+[[ -L "$HOME/.config/containers/systemd/searxng.container" ]]
+[[ ! -L "$HOME/.config/dotfiles/services.env" ]]
+[[ "$(stat -c %a "$HOME/.config/dotfiles/services.env")" == 600 ]]
+[[ "$(stat -c %a "$HOME/.config/searxng/settings.yml")" == 600 ]]
 controller_target="$(readlink -f "$HOME/.local/bin/controller-mouse-game-guard")"
 expected_controller="$ROOT/components/linux-zhixu-controller-fix/scripts/controller-mouse-game-guard"
 [[ "$controller_target" == "$expected_controller" ]]
@@ -46,12 +56,17 @@ printf '\n# preserved user edit\n' >>"$HOME/.config/yt-stream-workspace/config"
 
 close_client="$HOME/.local/libexec/hyprlauncher-ipc"
 before="$(stat -c '%Y:%s' "$close_client")"
-"$ROOT/install.sh" --streaming --controller
+"$ROOT/install.sh" --streaming --controller --services
 "$ROOT/verify.sh"
 after="$(stat -c '%Y:%s' "$close_client")"
 
 [[ "$before" == "$after" ]]
 [[ "$(find "$XDG_STATE_HOME/dotfiles/backups" -type f -name .bashrc | wc -l)" == 1 ]]
 grep -q '^# preserved user edit$' "$HOME/.config/yt-stream-workspace/config"
+
+rm -f "$HOME/.config/systemd/user/hermes-gateway.service" \
+    "$HOME/.config/systemd/user/hermes-gateway.service.d/10-dotfiles.conf"
+"$ROOT/install.sh" --services
+[[ ! -e "$HOME/.config/systemd/user/hermes-gateway.service.d/10-dotfiles.conf" ]]
 
 printf 'PASS isolated install, backup, idempotent rerun, and verification\n'

@@ -1,0 +1,15 @@
+[Unit]
+Description=Signal HTTP daemon for Hermes
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/dotfiles/services.env
+Environment=PATH=%h/.local/bin:%h/.cargo/bin:/usr/bin:/home/linuxbrew/.linuxbrew/bin
+ExecStart=%h/.local/bin/signal-cli-http
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,9 @@
+[Unit]
+Description=On-demand Hermes Chromium DevTools backend
+StopWhenUnneeded=yes
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/hermes-cdp-browser
+Restart=on-failure
+RestartSec=2

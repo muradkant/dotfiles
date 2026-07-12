@@ -1,0 +1,9 @@
+[Unit]
+Description=On-demand Hermes Chrome DevTools endpoint
+
+[Socket]
+ListenStream=127.0.0.1:9222
+NoDelay=true
+
+[Install]
+WantedBy=sockets.target

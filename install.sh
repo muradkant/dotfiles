@@ -8,6 +8,7 @@ INSTALL_PACKAGES=0
 INSTALL_STREAMING=0
 INSTALL_CONTROLLER=0
 INSTALL_AGENTS=0
+INSTALL_SERVICES=0
 
 usage() {
     cat <<'EOF'
@@ -19,8 +20,9 @@ Existing destinations are moved to a timestamped backup first.
   --packages     install the desktop package manifest with pacman
   --streaming    install/link yt-stream-workspace and its package manifest
   --controller   install the controller desktop mapper (not the DKMS driver)
+  --services     install local Hermes, search, and speech service definitions
   --agents       install the Pi/OpenCode/Codex profiles (Pi prerequisite required)
-  --full         equivalent to --packages --streaming --controller --agents
+  --full         install packages and every optional user-space component
   --help         show this help
 
 The hardware driver remains an explicit, separately verified operation in
@@ -34,11 +36,13 @@ while (($#)); do
         --packages) INSTALL_PACKAGES=1 ;;
         --streaming) INSTALL_STREAMING=1 ;;
         --controller) INSTALL_CONTROLLER=1 ;;
+        --services) INSTALL_SERVICES=1 ;;
         --agents) INSTALL_AGENTS=1 ;;
         --full)
             INSTALL_PACKAGES=1
             INSTALL_STREAMING=1
             INSTALL_CONTROLLER=1
+            INSTALL_SERVICES=1
             INSTALL_AGENTS=1
             ;;
         -h|--help)
@@ -111,7 +115,7 @@ read_manifest() {
 
 install_pacman_manifest() {
     local manifest="$1"
-    local -a packages=()
+    local -a packages=() missing=()
     mapfile -t packages < <(read_manifest "$manifest")
     ((${#packages[@]})) || return 0
     if [[ "${DOTFILES_SKIP_PACKAGE_INSTALL:-0}" == 1 ]]; then
@@ -119,7 +123,12 @@ install_pacman_manifest() {
         return 0
     fi
     command -v pacman >/dev/null 2>&1 || die "package installation requires pacman"
-    sudo pacman -S --needed "${packages[@]}"
+    mapfile -t missing < <(pacman -T "${packages[@]}" 2>/dev/null || true)
+    if ((${#missing[@]} == 0)); then
+        note "packages already satisfied: ${manifest#"$ROOT"/}"
+        return 0
+    fi
+    sudo pacman -S --needed "${missing[@]}"
 }
 
 git -C "$ROOT" submodule update --init --recursive
@@ -213,6 +222,51 @@ if ((INSTALL_CONTROLLER)); then
         systemctl --user daemon-reload
         systemctl --user enable --now \
             controller-mouse.service controller-mouse-game-guard.service
+    fi
+fi
+
+if ((INSTALL_SERVICES)); then
+    install_pacman_manifest "$ROOT/packages/services.txt"
+    install_template "$ROOT/services/services.env.example" \
+        "$HOME/.config/dotfiles/services.env"
+    "$ROOT/services/searxng/install.sh"
+    if [[ "${DOTFILES_SKIP_SERVICE_BUILDS:-0}" != 1 ]]; then
+        "$ROOT/services/kokoro/install.sh"
+    fi
+
+    link_path "$ROOT/services/kokoro/server.py" \
+        "$HOME/.local/libexec/kokoro-tts-server.py"
+    link_path "$ROOT/services/searxng/searxng.container" \
+        "$HOME/.config/containers/systemd/searxng.container"
+    for source in "$ROOT"/systemd/user/*.service "$ROOT"/systemd/user/*.socket; do
+        link_path "$source" "$HOME/.config/systemd/user/${source##*/}"
+    done
+    hermes_unit="$HOME/.config/systemd/user/hermes-gateway.service"
+    if [[ -e "$hermes_unit" ]]; then
+        link_path "$ROOT/systemd/user/hermes-gateway.service.d/10-dotfiles.conf" \
+            "$HOME/.config/systemd/user/hermes-gateway.service.d/10-dotfiles.conf"
+    else
+        note "Hermes gateway activation pending: install and configure Hermes"
+    fi
+
+    if [[ "${DOTFILES_SKIP_USER_SERVICES:-0}" != 1 ]]; then
+        systemctl --user daemon-reload
+        systemctl --user stop hermes-cdp-browser.service 2>/dev/null || true
+        # `systemctl disable` also removes a linked unit file. Remove only the
+        # old enablement link; the managed browser unit is still required on
+        # demand by hermes-cdp.service.
+        rm -f -- "$HOME/.config/systemd/user/default.target.wants/hermes-cdp-browser.service"
+        systemctl --user enable --now \
+            hermes-cdp.socket kokoro-tts.service searxng.service
+        if [[ -e "$hermes_unit" ]] &&
+            [[ -x "$HOME/.hermes/hermes-agent/venv/bin/python" ]] &&
+            grep -Eq '^SIGNAL_ACCOUNT=\+?[0-9]+$' \
+                "$HOME/.config/dotfiles/services.env"; then
+            systemctl --user enable --now \
+                signal-cli-daemon.service hermes-gateway.service
+        else
+            note "Hermes/Signal activation pending: finish Hermes setup and services.env"
+        fi
     fi
 fi
 
