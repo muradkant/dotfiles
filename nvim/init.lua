@@ -15,6 +15,11 @@ local ok, render_markdown = pcall(require, 'render-markdown')
 if ok then
   render_markdown.setup({
     enabled = true,
+    -- These are optional render-markdown features. Keep the configuration
+    -- honest instead of warning about parsers and converters we do not use.
+    html = { enabled = false },
+    latex = { enabled = false },
+    yaml = { enabled = false },
   })
 end
 
@@ -39,13 +44,11 @@ set_highlights()
 
 -- Set various options
 local options = {
-  mouse = "",
   number = true,
   guicursor = "n-v-c-i:block",
   relativenumber = true,
   updatetime = 300,
   completeopt = "menu,menuone,noselect",
-  autochdir = true
 }
 for k, v in pairs(options) do
   vim.opt[k] = v
