@@ -114,6 +114,10 @@ install_pacman_manifest() {
     local -a packages=()
     mapfile -t packages < <(read_manifest "$manifest")
     ((${#packages[@]})) || return 0
+    if [[ "${DOTFILES_SKIP_PACKAGE_INSTALL:-0}" == 1 ]]; then
+        note "skipped package installation for ${manifest#"$ROOT"/}"
+        return 0
+    fi
     command -v pacman >/dev/null 2>&1 || die "package installation requires pacman"
     sudo pacman -S --needed "${packages[@]}"
 }
@@ -192,6 +196,7 @@ fi
 
 if ((INSTALL_CONTROLLER)); then
     controller="$ROOT/components/linux-zhixu-controller-fix"
+    install_pacman_manifest "$ROOT/packages/controller.txt"
     link_path "$controller/antimicrox/desktop.gamecontroller.amgp" \
         "$HOME/.config/antimicrox/desktop.gamecontroller.amgp"
     link_path "$controller/scripts/controller-mouse-game-guard" \
@@ -204,8 +209,11 @@ if ((INSTALL_CONTROLLER)); then
         "$HOME/.config/systemd/user/controller-mouse.service"
     link_path "$controller/systemd/controller-mouse-game-guard.service" \
         "$HOME/.config/systemd/user/controller-mouse-game-guard.service"
-    systemctl --user daemon-reload
-    systemctl --user enable --now controller-mouse.service controller-mouse-game-guard.service
+    if [[ "${DOTFILES_SKIP_USER_SERVICES:-0}" != 1 ]]; then
+        systemctl --user daemon-reload
+        systemctl --user enable --now \
+            controller-mouse.service controller-mouse-game-guard.service
+    fi
 fi
 
 if ((INSTALL_AGENTS)); then
