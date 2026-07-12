@@ -55,16 +55,52 @@ while (($# > 0)); do
 	shift
 done
 
-command -v node >/dev/null || { echo "node is required" >&2; exit 1; }
-command -v pi >/dev/null || { echo "Install Pi before applying this profile" >&2; exit 1; }
-
 mkdir -p "$target_home"
 target_home="$(cd -- "$target_home" && pwd -P)"
+command -v node >/dev/null || { echo "node is required" >&2; exit 1; }
+pi_version="$(node -e 'process.stdout.write(require(process.argv[1]).pi)' \
+	"$script_dir/external-tools.json")"
+target_pi="$target_home/.local/bin/pi"
+if ((install_packages)); then
+	command -v npm >/dev/null || { echo "npm is required" >&2; exit 1; }
+	if [[ ! -x "$target_pi" ]] ||
+		[[ "$($target_pi --version 2>/dev/null || true)" != "$pi_version" ]]; then
+		npm install --global --prefix "$target_home/.local" --ignore-scripts \
+			"@earendil-works/pi-coding-agent@$pi_version"
+	fi
+	pi_executable="$target_pi"
+	if ((with_opencode)); then
+		opencode_version="$(node -e 'process.stdout.write(require(process.argv[1]).opencode)' \
+			"$script_dir/external-tools.json")"
+		target_opencode="$target_home/.local/bin/opencode"
+		if [[ ! -x "$target_opencode" ]] ||
+			[[ "$($target_opencode --version 2>/dev/null || true)" != "$opencode_version" ]]; then
+			npm install --global --prefix "$target_home/.local" \
+				"opencode-ai@$opencode_version"
+		fi
+	fi
+	if ((with_codex)); then
+		codex_version="$(node -e 'process.stdout.write(require(process.argv[1]).codex)' \
+			"$script_dir/external-tools.json")"
+		target_codex="$target_home/.local/bin/codex"
+		if [[ ! -x "$target_codex" ]] ||
+			[[ "$($target_codex --version 2>/dev/null || true)" != "codex-cli $codex_version" ]]; then
+			npm install --global --prefix "$target_home/.local" --ignore-scripts \
+				"@openai/codex@$codex_version"
+		fi
+	fi
+else
+	pi_executable="$(command -v pi || true)"
+	[[ -n "$pi_executable" ]] || {
+		echo "Pi is required with --skip-packages" >&2
+		exit 1
+	}
+fi
+
 agent_dir="$target_home/.pi/agent"
 extension_dir="$agent_dir/extensions"
 mkdir -p "$extension_dir"
 
-pi_executable="$(command -v pi)"
 pi_realpath="$(realpath "$pi_executable")"
 pi_package_root="$(dirname -- "$(dirname -- "$pi_realpath")")"
 preset_source="$pi_package_root/examples/extensions/preset.ts"
@@ -147,7 +183,8 @@ fi
 
 if ((install_packages)); then
 	while IFS= read -r package; do
-		HOME="$target_home" PI_CODING_AGENT_DIR="$agent_dir" pi install "$package"
+		HOME="$target_home" PI_CODING_AGENT_DIR="$agent_dir" \
+			"$pi_executable" install "$package"
 	done < <(node -e 'const s=require(process.argv[1]); for (const p of s.packages) console.log(typeof p === "string" ? p : p.source)' \
 		"$script_dir/agent/settings.json")
 
@@ -188,6 +225,28 @@ if ((install_packages)); then
 	if [[ ! -L "$pi_browse_skill" ]]; then
 		ln -s "$expected_browse_link" "$pi_browse_skill"
 	fi
+
+	for client in devin goose; do
+		client_skills="$target_home/.config/$client/skills"
+		client_browse="$client_skills/browse"
+		[[ -d "$client_skills" || -L "$client_browse" ]] || continue
+		expected_client_link="../../../.agents/skills/browse"
+		if [[ -e "$client_browse" || -L "$client_browse" ]]; then
+			if [[ ! -L "$client_browse" ]] ||
+				[[ "$(readlink "$client_browse")" != "$expected_client_link" ]]; then
+				if [[ -z "$backup_dir" ]]; then
+					backup_dir="$agent_dir/backups/dotfiles-$(date +%Y%m%d-%H%M%S)"
+				fi
+				mkdir -p "$backup_dir/client-skills/$client"
+				cp -a -- "$client_browse" "$backup_dir/client-skills/$client/browse"
+				rm -rf -- "$client_browse"
+			fi
+		fi
+		mkdir -p "$client_skills"
+		if [[ ! -L "$client_browse" ]]; then
+			ln -s "$expected_client_link" "$client_browse"
+		fi
+	done
 
 	browse_executable="$target_home/.local/bin/browse"
 	expected_browse_executable_link="../share/muradkant-pi-profile/browse/node_modules/browse/bin/run.js"

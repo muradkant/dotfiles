@@ -8,7 +8,7 @@
     "~/.pi/agent/extensions/preset.ts"
   ],
   "packages": [
-    "npm:pi-lens@3.8.62",
+    "npm:pi-lens@3.8.69",
     "npm:pi-web-access@0.13.0"
   ]
 }

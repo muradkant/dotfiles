@@ -71,7 +71,7 @@ assertEqual(sourceSettings.extensions, [
 	"~/.pi/agent/extensions/preset.ts",
 ], "Extension paths");
 assertEqual(sourceSettings.packages, [
-	"npm:pi-lens@3.8.62",
+	"npm:pi-lens@3.8.69",
 	"npm:pi-web-access@0.13.0",
 ], "Package pins");
 
@@ -121,7 +121,7 @@ if (installedWebConfig.provider !== "exa" || installedWebConfig.webSearch?.enabl
 
 if (requirePackages) {
 	const expectedPackages = new Map([
-		["pi-lens", "3.8.62"],
+		["pi-lens", "3.8.69"],
 		["pi-web-access", "0.13.0"],
 	]);
 	for (const [name, version] of expectedPackages) {
