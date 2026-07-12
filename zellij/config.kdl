@@ -155,7 +155,6 @@ keybinds clear-defaults=true {
         bind "Alt p" { TogglePaneInGroup; }
         bind "Alt Shift p" { ToggleGroupMarking; }
         bind "Ctrl q" { Quit; }
-	bind "Ctrl l" { Clear; }  
     }
     shared_except "locked" "move" {
         bind "Ctrl h" { SwitchToMode "move"; }
