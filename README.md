@@ -1,57 +1,97 @@
-# CachyOS dotfiles
+# CachyOS workstation
 
-The desktop I use: Hyprland, Waybar, Wofi, Kitty, Neovim, Emacs, Zellij, and a
-portable set of Pi/OpenCode/Codex agent profiles.
+Versioned Hyprland desktop, editors, shells, local agent services, and AI tool
+profiles. The repository owns configuration; credentials and mutable state stay
+in the home directory.
 
-## Desktop installation
+## Restore the workstation
 
-Clone without mixing repository metadata into the home directory:
-
-```sh
-git clone --branch CachyOS https://github.com/muradkant/dotfiles.git /tmp/dotfiles
-```
-
-Back up any live configuration you intend to replace, then install:
+On CachyOS or Arch, clone into a dedicated directory:
 
 ```sh
-cp /tmp/dotfiles/.bashrc ~/.bashrc
-mkdir -p ~/.config ~/.emacs.d ~/.local/bin ~/Pictures
-cp -a /tmp/dotfiles/hypr ~/.config/hypr
-cp -a /tmp/dotfiles/kitty ~/.config/kitty
-cp -a /tmp/dotfiles/nvim ~/.config/nvim
-cp -a /tmp/dotfiles/waybar ~/.config/waybar
-cp -a /tmp/dotfiles/wofi ~/.config/wofi
-cp -a /tmp/dotfiles/wlogout ~/.config/wlogout
-cp -a /tmp/dotfiles/zellij ~/.config/zellij
-cp -a /tmp/dotfiles/emacs/. ~/.emacs.d/
-cp -a /tmp/dotfiles/bin/. ~/.local/bin/
-cp /tmp/dotfiles/background.jpg ~/Pictures/background.jpg
-cp /tmp/dotfiles/lockscreen.jpg ~/Pictures/lockscreen.jpg
-hyprctl reload
+git clone --recurse-submodules --branch CachyOS \
+  https://github.com/muradkant/dotfiles.git ~/Projects/dotfiles
+cd ~/Projects/dotfiles
+./install.sh --full
 ```
 
-The copy is intentionally explicit: this repository reflects one machine and
-does not pretend that replacing another desktop wholesale is safe.
+The installer links managed configuration, copies mutable templates, preserves
+replaced files in `~/.local/state/dotfiles/backups`, installs declared Pacman
+packages, provisions pinned Pi/OpenCode/Codex tools, and clones missing projects
+at locked commits. Repeating it is safe. Existing project worktrees, credentials,
+sessions, and user-edited service files are never reset.
 
-## Agent profiles
-
-Pi's installer is separate because it pins packages, generates derived files,
-and preserves unmanaged credentials and sessions:
+`--full` installs independent local services immediately. Hermes and Signal stay
+pending until their credentials exist. Complete that boundary explicitly:
 
 ```sh
-/tmp/dotfiles/pi/install.sh --with-opencode --with-codex
+hermes_revision=$(python3 -c '
+import json
+d=json.load(open("projects/lock.json"))
+print(next(p["revision"] for p in d["projects"] if p["name"] == "hermes-agent"))
+')
+~/.hermes/hermes-agent/scripts/install.sh \
+  --commit "$hermes_revision" --skip-setup
+hermes setup
+${EDITOR:-nvim} ~/.config/dotfiles/services.env
+./install.sh --services
 ```
 
-See [`pi/README.md`](pi/README.md) for prerequisites, profile behavior,
-credentials, synchronization, and disposable verification.
+`services.env` needs the local Signal account number. The populated file is mode
+600 and untracked. Hermes retains its upstream-generated base unit; dotfiles adds
+only a systemd drop-in for Signal readiness.
 
-## Desktop character
+The ZhiXu controller's patched DKMS driver is deliberately separate from the
+user-space `--controller` setup because it rebuilds kernel modules as root. Follow
+the pinned component's [driver procedure](components/linux-zhixu-controller-fix/README.md)
+after reviewing the detected kernel and DKMS version. The installer never changes
+Wi-Fi configuration.
 
-- Laptop workspaces 1–5 and HDMI workspaces 6–10 support mirror and extended
-  modes; `hypr/reload-hdmi-extended` repairs the live transition.
-- `bin/cliphist-picker` combines Cliphist, wl-clipboard, Wofi, and ImageMagick
-  into searchable text and image history with cached thumbnails.
-- Hyprland ecosystem tools, Waybar, Wofi, and logout UI share one square,
-  i3-influenced visual language.
-- Only occupied or active workspace buttons appear.
-- `pi/` is portable and secret-free; generated runtime state is not tracked.
+## Install less
+
+With no option, `install.sh` applies the desktop, shell, and editor links without
+installing packages or optional systems.
+
+| Option | Adds |
+| --- | --- |
+| `--packages` | Desktop Pacman manifest |
+| `--streaming` | Wayland streaming workspace |
+| `--controller` | Controller mapper and game guard |
+| `--services` | Kokoro, SearXNG, Signal, Hermes service integration |
+| `--agents` | Pinned Pi, OpenCode, Codex, Browse, and profiles |
+| `--projects` | Missing standalone repositories from `projects/lock.json` |
+| `--full` | Every option above |
+
+Standalone projects remain independent repositories. Directly consumed code is
+pinned as a submodule. `projects/sync.sh` checks remote, commit, and cleanliness;
+`--materialize` clones missing entries but never fetches or checks out an existing
+worktree.
+
+## Verify
+
+```sh
+./verify.sh
+./tests/install-smoke.sh
+./tests/emacs-state.sh
+./tests/services-static.sh
+./tests/projects-sync.sh
+./pi/tests/fresh-home.sh
+```
+
+These tests use disposable homes, validate actual application configs, rebuild
+the Hyprlauncher close client, exercise Emacs recovery, inspect generated systemd
+units, and prove that project synchronization preserves dirty trees. For a clean
+distribution boundary—including Rust tooling—run `./pi/tests/distrobox.sh`.
+
+## Update
+
+```sh
+git pull --ff-only
+git submodule update --init --recursive
+./install.sh --full
+./verify.sh
+```
+
+Tool and project upgrades are explicit lock changes followed by their relevant
+tests. This keeps a fresh install reproducible without freezing credentials or
+silently overwriting active work.

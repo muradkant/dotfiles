@@ -12,19 +12,19 @@ and generates three named agents from tracked Markdown:
 
 ## Install
 
-Install the tested Pi release first:
+Install the pinned toolchain and profiles:
 
 ```sh
-npm install --global --ignore-scripts @earendil-works/pi-coding-agent@0.80.2
 ./pi/install.sh --with-opencode --with-codex
 ```
 
 The installer:
 
+- installs Pi 0.80.6, OpenCode 1.17.18, and Codex 0.144.1 under `~/.local`;
 - copies portable Pi settings and Pi's bundled preset extension;
 - generates `presets.json` from `pi/profiles/*.md`;
-- installs `pi-lens@3.8.62` and `pi-web-access@0.13.0`;
-- installs Browse CLI 0.8.0 in an isolated prefix, its official bundled skill
+- installs `pi-lens@3.8.69` and `pi-web-access@0.13.0`;
+- installs Browse CLI 0.9.5 in an isolated prefix, its official bundled skill
   under `~/.agents/skills/browse`, and links both into the expected locations;
 - optionally generates matching OpenCode agents and Codex profiles;
 - creates a secret-free Exa configuration only when none exists; and
@@ -75,5 +75,5 @@ That command synchronizes Pi, OpenCode, Codex, and the historical copies under
 
 The first uses a temporary home; the second builds a disposable distribution
 environment. Together they verify package pins, Browse and its official skill,
-all 21 Pi tools, preset loading, portable paths, explicit tool restrictions,
+all 22 Pi tools, preset loading, portable paths, explicit tool restrictions,
 the three Codex profiles, and instruction visibility at the model boundary.
