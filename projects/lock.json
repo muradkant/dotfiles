@@ -23,10 +23,10 @@
       "group": "project"
     },
     {
-      "name": "opencode-llm-alternation",
-      "path": "Projects/opencode-llm-alternation",
-      "url": "https://github.com/muradkant/opencode-llm-alternation.git",
-      "revision": "a20b264f2b20a192fb02503235637f19bc020ed3",
+      "name": "oc-route",
+      "path": "Projects/oc-route",
+      "url": "https://github.com/muradkant/oc-route.git",
+      "revision": "a46914bb3d91051a084cd45a665812510d939218",
       "group": "project"
     },
     {
