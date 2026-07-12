@@ -1,21 +1,20 @@
-#
-# ~/.bashrc
-#
-
-# Shared PATH setup for interactive and non-interactive Bash shells.
-export PATH="$HOME/.local/bin:$PATH"
-if [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv bash)"
-fi
-
-# If not running interactively, don't do anything
-[[ $- != *i* ]] && return
+# shellcheck shell=bash
+# Interactive Bash only. Login/session environment belongs in ~/.profile.
+[[ $- == *i* ]] || return
 
 alias ls='ls --color=auto'
 alias grep='grep --color=auto'
-PS1='[\u@\h \W]\$ '
 export EDITOR=nvim
-eval "$(starship init bash)"
+PS1='[\u@\h \W]\$ '
 
-# strix
-[[ -d "$HOME/.strix/bin" ]] && export PATH="$HOME/.strix/bin:$PATH"
+if [[ ${DOTFILES_STARSHIP:-0} == 1 ]] && command -v starship >/dev/null 2>&1; then
+    eval "$(starship init bash)"
+else
+    unset STARSHIP_SESSION_KEY STARSHIP_SHELL
+fi
+
+[[ -d "$HOME/.strix/bin" ]] &&
+    case ":$PATH:" in
+        *":$HOME/.strix/bin:"*) ;;
+        *) export PATH="$HOME/.strix/bin:$PATH" ;;
+    esac
