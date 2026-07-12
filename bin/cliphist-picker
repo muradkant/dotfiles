@@ -10,6 +10,98 @@ readonly wofi_style="$HOME/.config/wofi/clipboard.css"
 runtime_root="${XDG_RUNTIME_DIR:-/tmp}"
 [[ -w "$runtime_root" ]] || runtime_root="/tmp"
 readonly runtime_root
+readonly state_dir="$runtime_root/cliphist-picker-state"
+readonly active_link="$state_dir/active"
+readonly quiet_file="$state_dir/quiet-since-us"
+readonly burst_quiet_us=250000
+
+mkdir -p "$state_dir"
+chmod 700 "$state_dir"
+
+terminate_tree() {
+    local pid="$1"
+    local signal="${2:-TERM}"
+    local child
+
+    if [[ -r "/proc/$pid/task/$pid/children" ]]; then
+        for child in $(<"/proc/$pid/task/$pid/children"); do
+            terminate_tree "$child" "$signal"
+        done
+    fi
+
+    kill -"$signal" "$pid" 2>/dev/null || true
+}
+
+now_us() {
+    printf '%s\n' "${EPOCHREALTIME/./}"
+}
+
+mark_burst_close() {
+    local temporary="$state_dir/.quiet-since-us.$$"
+
+    now_us >"$temporary"
+    mv -f -- "$temporary" "$quiet_file"
+}
+
+burst_is_quiet() {
+    local closed_at current age
+
+    [[ -r "$quiet_file" ]] || return 1
+    read -r closed_at <"$quiet_file" || return 1
+    [[ "$closed_at" =~ ^[0-9]+$ ]] || return 1
+    current="$(now_us)"
+    age=$((current - closed_at))
+    ((age >= 0 && age < burst_quiet_us))
+}
+
+# The symlink makes claiming the picker and publishing its PID one atomic
+# operation. A second invocation is therefore a close request, even while the
+# first invocation is still preparing thumbnails or starting Wofi.
+if ! ln -s "$$" "$active_link" 2>/dev/null; then
+    active_pid="$(readlink "$active_link" 2>/dev/null || true)"
+    if [[ "$active_pid" =~ ^[0-9]+$ ]] && kill -0 "$active_pid" 2>/dev/null; then
+        # Repeated binding presses mean "remain closed", not alternating
+        # cold starts. Further presses extend this brief quiet window.
+        mark_burst_close
+        terminate_tree "$active_pid"
+        # GTK normally exits on TERM. Bound the wait so a wedged menu cannot
+        # make the toggle feel sticky or retain the singleton indefinitely.
+        for _ in {1..10}; do
+            kill -0 "$active_pid" 2>/dev/null || break
+            sleep 0.01
+        done
+        kill -0 "$active_pid" 2>/dev/null && terminate_tree "$active_pid" KILL
+        exit 0
+    fi
+
+    # Recover from an unclean shutdown, then let this invocation open normally.
+    rm -f -- "$active_link"
+    ln -s "$$" "$active_link" 2>/dev/null || exit 0
+fi
+
+if burst_is_quiet; then
+    mark_burst_close
+    rm -f -- "$active_link"
+    exit 0
+fi
+
+work_dir=""
+cleanup() {
+    local status=$?
+    local owner
+
+    trap - EXIT INT TERM HUP
+    for child in $(jobs -pr); do
+        terminate_tree "$child"
+    done
+    [[ -n "$work_dir" ]] && rm -rf -- "$work_dir"
+
+    owner="$(readlink "$active_link" 2>/dev/null || true)"
+    [[ "$owner" == "$$" ]] && rm -f -- "$active_link"
+    exit "$status"
+}
+trap cleanup EXIT
+trap 'exit 0' INT TERM HUP
 
 fail() {
     printf 'cliphist-picker: %s\n' "$1" >&2
@@ -31,22 +123,17 @@ mkdir -p "$thumb_dir"
 chmod 700 "$cache_root" "$thumb_dir"
 
 work_dir="$(mktemp -d "$runtime_root/cliphist-picker.XXXXXX")"
-trap 'rm -rf -- "$work_dir"' EXIT
 
 history_file="$work_dir/history"
 menu_file="$work_dir/menu"
 id_file="$work_dir/ids"
+image_file="$work_dir/images"
+: >"$menu_file"
+: >"$id_file"
+: >"$image_file"
 
 cliphist list >"$history_file"
 [[ -s "$history_file" ]] || fail "Clipboard history is empty."
-
-escape_markup() {
-    local value="$1"
-    value="${value//&/&amp;}"
-    value="${value//</&lt;}"
-    value="${value//>/&gt;}"
-    printf '%s' "$value"
-}
 
 generate_thumbnail() {
     local id="$1"
@@ -67,45 +154,69 @@ generate_thumbnail() {
 declare -A live_image_ids=()
 declare -a pending_ids=()
 declare -a pending_thumbs=()
-visible_count=0
+
+# Format the complete menu in one awk process. The old Bash loop performed
+# several string operations and function calls for every history entry, which
+# accounted for most of the launch delay on a large history.
+awk -v menu_file="$menu_file" -v id_file="$id_file" \
+    -v image_file="$image_file" -v thumb_dir="$thumb_dir" '
+    function escape_markup(value) {
+        gsub(/&/, "\\&amp;", value)
+        gsub(/</, "\\&lt;", value)
+        gsub(/>/, "\\&gt;", value)
+        return value
+    }
+    {
+        id = $0
+        sub(/\t.*/, "", id)
+        if (id !~ /^[0-9]+$/ || index($0, "\t") == 0)
+            next
+
+        preview = $0
+        sub(/^[^\t]*\t/, "", preview)
+
+        # Browsers often add an HTML representation beside the useful image.
+        if (preview ~ /^<meta http-equiv=/ && preview ~ /<img /)
+            next
+
+        if (preview ~ /^\[\[ binary data .* (png|jpg|jpeg|bmp|gif|webp) [0-9]+x[0-9]+ \]\]$/) {
+            metadata = preview
+            sub(/^\[\[ binary data /, "", metadata)
+            sub(/ \]\]$/, "", metadata)
+            count = split(metadata, fields, " ")
+            dimensions = fields[count]
+            format = toupper(fields[count - 1])
+            size = fields[1]
+            for (i = 2; i <= count - 2; i++)
+                size = size " " fields[i]
+
+            printf "img:%s/%s.png:text:<span foreground=\"#7dcfff\">[IMG]</span>  %s · %s · %s\n", \
+                thumb_dir, id, format, dimensions, size >> menu_file
+            print id "\t" preview >> image_file
+        } else if (preview ~ /^https?:\/\//) {
+            printf "text:<span foreground=\"#9ece6a\">[URL]</span>  %s\n", \
+                escape_markup(preview) >> menu_file
+        } else {
+            printf "text:<span foreground=\"#bb9af7\">[TXT]</span>  %s\n", \
+                escape_markup(preview) >> menu_file
+        }
+
+        print id >> id_file
+    }
+' "$history_file"
+
+visible_count="$(wc -l <"$id_file")"
 
 while IFS=$'\t' read -r id preview; do
-    [[ "$id" =~ ^[0-9]+$ ]] || continue
+    [[ "$preview" =~ ^\[\[\ binary\ data\ (.+)\ (png|jpg|jpeg|bmp|gif|webp)\ ([0-9]+x[0-9]+)\ \]\]$ ]] || continue
+    thumbnail="$thumb_dir/$id.png"
+    live_image_ids["$id"]=1
 
-    # Browsers frequently store this HTML representation alongside the actual
-    # image. The separate image entry is the useful one in a visual picker.
-    if [[ "$preview" == '<meta http-equiv='* && "$preview" == *'<img '* ]]; then
-        continue
+    if [[ ! -s "$thumbnail" ]]; then
+        pending_ids+=("$id")
+        pending_thumbs+=("$thumbnail")
     fi
-
-    if [[ "$preview" =~ ^\[\[\ binary\ data\ (.+)\ (png|jpg|jpeg|bmp|gif|webp)\ ([0-9]+x[0-9]+)\ \]\]$ ]]; then
-        size="${BASH_REMATCH[1]}"
-        format="${BASH_REMATCH[2]^^}"
-        dimensions="${BASH_REMATCH[3]}"
-        thumbnail="$thumb_dir/$id.png"
-        live_image_ids["$id"]=1
-
-        if [[ ! -s "$thumbnail" ]]; then
-            pending_ids+=("$id")
-            pending_thumbs+=("$thumbnail")
-        fi
-
-        printf 'img:%s:text:<span foreground="#7dcfff">[IMG]</span>  %s · %s · %s\n' \
-            "$thumbnail" "$format" "$dimensions" "$size" >>"$menu_file"
-    else
-        escaped_preview="$(escape_markup "$preview")"
-        if [[ "$preview" =~ ^https?:// ]]; then
-            printf 'text:<span foreground="#9ece6a">[URL]</span>  %s\n' \
-                "$escaped_preview" >>"$menu_file"
-        else
-            printf 'text:<span foreground="#bb9af7">[TXT]</span>  %s\n' \
-                "$escaped_preview" >>"$menu_file"
-        fi
-    fi
-
-    printf '%s\n' "$id" >>"$id_file"
-    ((visible_count += 1))
-done <"$history_file"
+done <"$image_file"
 
 [[ "$visible_count" -gt 0 ]] || fail "Clipboard history has no displayable entries."
 
