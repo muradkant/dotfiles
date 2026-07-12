@@ -4,6 +4,27 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+
+(defconst my/emacs-state-root
+  (file-name-as-directory
+   (expand-file-name "emacs" (or (getenv "XDG_STATE_HOME") "~/.local/state"))))
+(defconst my/emacs-data-root
+  (file-name-as-directory
+   (expand-file-name "emacs" (or (getenv "XDG_DATA_HOME") "~/.local/share"))))
+(defconst my/emacs-cache-root
+  (file-name-as-directory
+   (expand-file-name "emacs" (or (getenv "XDG_CACHE_HOME") "~/.cache"))))
+
+(dolist (directory (list my/emacs-state-root my/emacs-data-root my/emacs-cache-root))
+  (make-directory directory t)
+  (set-file-modes directory #o700))
+
+(setq package-user-dir
+      (or (getenv "EMACS_PACKAGE_DIR")
+          (expand-file-name "elpa" my/emacs-data-root))
+      custom-file (expand-file-name "custom.el" my/emacs-state-root))
+
 ;; ============================================================================
 ;; PACKAGE MANAGEMENT SETUP
 ;; ============================================================================
@@ -55,12 +76,31 @@
 (ido-mode 1)
 (ido-everywhere 1)
 
-;; Backup settings
-(setq-default make-backup-files nil
-              auto-save-default nil
-              compile-command "")
+;; Recovery files are enabled but centralized. Projects never receive `~`,
+;; `#...#`, `.#...`, undo-tree, or Custom artifacts.
+(let ((backup-dir (expand-file-name "backups/" my/emacs-state-root))
+      (auto-save-dir (expand-file-name "auto-save/" my/emacs-state-root))
+      (lock-dir (expand-file-name "locks/" my/emacs-state-root))
+      (undo-dir (expand-file-name "undo-tree/" my/emacs-state-root)))
+  (dolist (directory (list backup-dir auto-save-dir lock-dir undo-dir))
+    (make-directory directory t)
+    (set-file-modes directory #o700))
+  (setq backup-directory-alist `(("." . ,backup-dir))
+        auto-save-file-name-transforms `((".*" ,auto-save-dir sha256))
+        auto-save-list-file-prefix (expand-file-name "sessions/" auto-save-dir)
+        lock-file-name-transforms `((".*" ,lock-dir sha256))
+        undo-tree-history-directory-alist `(("." . ,undo-dir))))
 
-(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo-tree-history/")))
+(setq-default make-backup-files t
+              auto-save-default t
+              compile-command "")
+(setq backup-by-copying t
+      version-control t
+      kept-new-versions 10
+      kept-old-versions 2
+      delete-old-versions t
+      auto-save-timeout 20
+      auto-save-interval 200)
 
 ;; ============================================================================
 ;; COMPILATION SETTINGS
@@ -205,7 +245,29 @@
 (use-package gruber-darker-theme
   :ensure t
   :config
-  (load-theme 'gruber-darker t))
+  (load-theme 'gruber-darker t)
+  ;; The 2023 theme stores nil foreground/background values. Emacs 30 warns
+  ;; once per affected face on every new frame. Sanitize the registered theme
+  ;; settings in memory, preserving package updates and the theme's appearance.
+  (cl-labels ((sanitize-colors
+               (form)
+               (when (consp form)
+                 (let ((tail form))
+                   (while (consp tail)
+                     (when (and (memq (car tail) '(:foreground :background))
+                                (consp (cdr tail))
+                                (null (cadr tail)))
+                       (setcar (cdr tail) 'unspecified))
+                     (sanitize-colors (car tail))
+                     (setq tail (cdr tail)))))))
+    (let ((settings (copy-tree (get 'gruber-darker 'theme-settings))))
+      (sanitize-colors settings)
+      (put 'gruber-darker 'theme-settings settings)
+      ;; Re-register per-face theme specs from the corrected settings. Merely
+      ;; changing the theme symbol is insufficient: new frames use these
+      ;; per-face properties.
+      (disable-theme 'gruber-darker)
+      (enable-theme 'gruber-darker))))
 
 ;; Zig mode
 (use-package zig-mode
@@ -370,16 +432,25 @@
     (with-current-buffer "*scratch*"
       (my/scratch-magic-bind-key))))
 
+;; ============================================================================
+;; OPENCODE HYPRLAND POPUP
+;; ============================================================================
+
+;; Local, non-MELPA package loaded from the flattened repo root.
+;; The package-owned global mode binds C-c o to open the prompt and
+;; C-c h to hide/restore the floating frame.
+;;
+;; First invocation spawns a managed `opencode serve --port 0' subprocess
+;; (Emacs owns it and tears it down on exit). To attach to an externally
+;; started server instead, set `oc-hp-server-port' to that number.
+;;
+;; The Hyprland window rule for the float is in ~/.config/hypr/hyprland.conf.
+(add-to-list 'load-path
+             (expand-file-name "site-lisp/emacs-opencode" user-emacs-directory))
+(when (require 'opencode-hyprland-popup nil t)
+  (opencode-hyprland-popup-global-mode 1))
+
+(when (file-readable-p custom-file)
+  (load custom-file nil t))
+
 ;;; init.el ends here
-(custom-set-variables
- ;; custom-set-variables was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(package-selected-packages nil))
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- )

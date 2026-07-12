@@ -4,6 +4,20 @@
 
 ;;; Code:
 
+(defconst my/emacs-data-root
+  (file-name-as-directory
+   (expand-file-name "emacs" (or (getenv "XDG_DATA_HOME") "~/.local/share"))))
+(defconst my/emacs-cache-root
+  (file-name-as-directory
+   (expand-file-name "emacs" (or (getenv "XDG_CACHE_HOME") "~/.cache"))))
+
+(setq package-user-dir
+      (or (getenv "EMACS_PACKAGE_DIR")
+          (expand-file-name "elpa" my/emacs-data-root)))
+
+(when (fboundp 'startup-redirect-eln-cache)
+  (startup-redirect-eln-cache (expand-file-name "eln-cache" my/emacs-cache-root)))
+
 ;; Disable package.el initialization so use-package can control it
 (setq package-enable-at-startup nil)
 
