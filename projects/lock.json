@@ -1,0 +1,54 @@
+{
+  "schema": 1,
+  "projects": [
+    {
+      "name": "hermes-agent",
+      "path": ".hermes/hermes-agent",
+      "url": "https://github.com/NousResearch/hermes-agent.git",
+      "revision": "7426c09beee73bdff94d916015bac71384f6bc92",
+      "group": "runtime"
+    },
+    {
+      "name": "retrobat-portable",
+      "path": "retrobat-portable",
+      "url": "https://github.com/muradkant/retrobat-portable.git",
+      "revision": "8bbbad93adf94359e518e12c41c94ab792760cf1",
+      "group": "project"
+    },
+    {
+      "name": "canvas-prototype-reference",
+      "path": "Projects/canvas-prototype-reference",
+      "url": "https://github.com/muradkant/not-news-aggregator.git",
+      "revision": "3220d3af5607d27b8d945026f8c0551921a4addc",
+      "group": "project"
+    },
+    {
+      "name": "opencode-llm-alternation",
+      "path": "Projects/opencode-llm-alternation",
+      "url": "https://github.com/muradkant/opencode-llm-alternation.git",
+      "revision": "a20b264f2b20a192fb02503235637f19bc020ed3",
+      "group": "project"
+    },
+    {
+      "name": "opencode-source",
+      "path": "Projects/opencode-source",
+      "url": "https://github.com/sst/opencode.git",
+      "revision": "355a0bcf5bb5e6c7baa271a4b2439a40f286e55d",
+      "group": "reference"
+    },
+    {
+      "name": "docker-docs",
+      "path": "docs-corpus/docker",
+      "url": "https://github.com/docker/docs.git",
+      "revision": "a172fe6025899084fe16498ddab1c467c57de49d",
+      "group": "reference"
+    },
+    {
+      "name": "kubernetes-website",
+      "path": "docs-corpus/kubernetes",
+      "url": "https://github.com/kubernetes/website.git",
+      "revision": "9c5eb6708f43e25843613c86a53fed329cf228eb",
+      "group": "reference"
+    }
+  ]
+}

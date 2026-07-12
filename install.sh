@@ -9,6 +9,7 @@ INSTALL_STREAMING=0
 INSTALL_CONTROLLER=0
 INSTALL_AGENTS=0
 INSTALL_SERVICES=0
+INSTALL_PROJECTS=0
 
 usage() {
     cat <<'EOF'
@@ -21,7 +22,8 @@ Existing destinations are moved to a timestamped backup first.
   --streaming    install/link yt-stream-workspace and its package manifest
   --controller   install the controller desktop mapper (not the DKMS driver)
   --services     install local Hermes, search, and speech service definitions
-  --agents       install the Pi/OpenCode/Codex profiles (Pi prerequisite required)
+  --projects     clone missing standalone repositories at locked revisions
+  --agents       install pinned Pi/OpenCode/Codex tools and profiles
   --full         install packages and every optional user-space component
   --help         show this help
 
@@ -37,12 +39,14 @@ while (($#)); do
         --streaming) INSTALL_STREAMING=1 ;;
         --controller) INSTALL_CONTROLLER=1 ;;
         --services) INSTALL_SERVICES=1 ;;
+        --projects) INSTALL_PROJECTS=1 ;;
         --agents) INSTALL_AGENTS=1 ;;
         --full)
             INSTALL_PACKAGES=1
             INSTALL_STREAMING=1
             INSTALL_CONTROLLER=1
             INSTALL_SERVICES=1
+            INSTALL_PROJECTS=1
             INSTALL_AGENTS=1
             ;;
         -h|--help)
@@ -132,6 +136,9 @@ install_pacman_manifest() {
 }
 
 git -C "$ROOT" submodule update --init --recursive
+if ((INSTALL_PROJECTS)); then
+    "$ROOT/projects/sync.sh" --materialize --group all
+fi
 
 if ((INSTALL_PACKAGES)); then
     install_pacman_manifest "$ROOT/packages/desktop.txt"
