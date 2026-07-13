@@ -7,7 +7,7 @@ alias grep='grep --color=auto'
 export EDITOR=nvim
 PS1='[\u@\h \W]\$ '
 
-if [[ ${DOTFILES_STARSHIP:-0} == 1 ]] && command -v starship >/dev/null 2>&1; then
+if command -v starship >/dev/null 2>&1; then
     eval "$(starship init bash)"
 else
     unset STARSHIP_SESSION_KEY STARSHIP_SHELL

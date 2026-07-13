@@ -29,6 +29,7 @@ python
 python-gobject
 ripgrep
 rsync
+starship
 swaybg
 ttf-jetbrains-mono-nerd
 waybar
