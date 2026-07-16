@@ -156,7 +156,6 @@ done <<'EOF'
 hypr/hyprland.conf|.config/hypr/hyprland.conf
 hypr/hyprlauncher.conf|.config/hypr/hyprlauncher.conf
 hypr/hyprlock.conf|.config/hypr/hyprlock.conf
-hypr/hypridle.conf|.config/hypr/hypridle.conf
 hypr/hyprtoolkit.conf|.config/hypr/hyprtoolkit.conf
 hypr/reload-hdmi-extended|.config/hypr/reload-hdmi-extended
 hypr/workspaces-hdmi-extended.conf|.config/hypr/workspaces-hdmi-extended.conf

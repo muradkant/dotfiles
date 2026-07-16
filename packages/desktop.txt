@@ -10,7 +10,6 @@ emacs
 fd
 flameshot
 git
-hypridle
 hyprland
 hyprlauncher
 hyprlock
