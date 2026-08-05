@@ -153,12 +153,12 @@ link_path "$ROOT/.profile" "$HOME/.profile"
 while IFS='|' read -r source destination; do
     link_path "$ROOT/$source" "$HOME/$destination"
 done <<'EOF'
-hypr/hyprland.conf|.config/hypr/hyprland.conf
+hypr/hyprland.lua|.config/hypr/hyprland.lua
 hypr/hyprlauncher.conf|.config/hypr/hyprlauncher.conf
 hypr/hyprlock.conf|.config/hypr/hyprlock.conf
 hypr/hyprtoolkit.conf|.config/hypr/hyprtoolkit.conf
 hypr/reload-hdmi-extended|.config/hypr/reload-hdmi-extended
-hypr/workspaces-hdmi-extended.conf|.config/hypr/workspaces-hdmi-extended.conf
+hypr/workspaces-hdmi-extended.lua|.config/hypr/workspaces-hdmi-extended.lua
 kitty/kitty.conf|.config/kitty/kitty.conf
 waybar/config.jsonc|.config/waybar/config.jsonc
 waybar/style.css|.config/waybar/style.css

@@ -6,13 +6,25 @@ ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-hypr-reload.XXXXXX")"
 trap 'rm -rf -- "$TMP"' EXIT
 
-config="$ROOT/hypr/hyprland.conf"
-grep -Fqx 'monitor = HDMI-A-1, 1920x1080@60, 1280x0, 1.5' "$config"
-grep -Fqx 'source = ~/.config/hypr/workspaces-hdmi-extended.conf' "$config"
-if grep -Eq '^[[:space:]]*monitor[[:space:]]*=.*HDMI-A-1.*mirror' "$config"; then
+config="$ROOT/hypr/hyprland.lua"
+module="$ROOT/hypr/workspaces-hdmi-extended.lua"
+# Mirror mode is active on HDMI-A-1.
+grep -Fxq '    mirror   = "eDP-1",' "$config"
+grep -Fxq -e '-- hl.monitor({ output = "HDMI-A-1", mode = "1920x1080@60", position = "1280x0", scale = 1.5 })' "$config"
+# The extended HDMI monitor and its workspace module must stay non-active.
+if ! grep -Fq 'require("workspaces-hdmi-extended")' "$config"; then
+    printf '%s\n' 'unable to find the extended-HDMI require switch' >&2
+    exit 1
+fi
+if grep -Eq '^[[:space:]]*hl\.monitor\({.*"HDMI-A-1".*1280x0' "$config" ||
+   grep -Eyq '^[[:space:]]*require\("workspaces-hdmi-extended"\)' "$config"; then
     printf '%s\n' 'mirror and extended HDMI rules are active together' >&2
     exit 1
 fi
+grep -Fq 'workspace_rule' "$module"
+grep -Fq 'reload-hdmi-extended' "$module"
+grep -Fq 'eDP-1' "$module"
+grep -Fq 'HDMI-A-1' "$module"
 
 mkdir -p "$TMP/bin" "$TMP/home with space/Pictures"
 for command in hyprctl pkill sleep; do

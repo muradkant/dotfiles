@@ -36,7 +36,7 @@ done
 check_link "$ROOT/.bashrc" "$HOME/.bashrc"
 check_link "$ROOT/.bash_profile" "$HOME/.bash_profile"
 check_link "$ROOT/.profile" "$HOME/.profile"
-check_link "$ROOT/hypr/hyprland.conf" "$HOME/.config/hypr/hyprland.conf"
+check_link "$ROOT/hypr/hyprland.lua" "$HOME/.config/hypr/hyprland.lua"
 check_link "$ROOT/emacs/init.el" "$HOME/.emacs.d/init.el"
 check_link "$ROOT/zellij/config.kdl" "$HOME/.config/zellij/config.kdl"
 check_link "$ROOT/nvim/nvim-pack-lock.json" "$HOME/.config/nvim/nvim-pack-lock.json"
@@ -57,7 +57,7 @@ else
 fi
 
 if command -v Hyprland >/dev/null 2>&1; then
-    if Hyprland --verify-config --config "$ROOT/hypr/hyprland.conf" 2>&1 |
+    if Hyprland --verify-config --config "$ROOT/hypr/hyprland.lua" 2>&1 |
         grep -q 'config ok'; then
         pass "Hyprland tracked config"
     else
