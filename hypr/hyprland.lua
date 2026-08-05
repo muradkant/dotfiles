@@ -209,7 +209,9 @@ hl.bind(mainMod .. " + SHIFT + space",                 hl.dsp.window.float())
 hl.bind(mainMod .. " + D",                             hl.dsp.exec_cmd("~/.local/bin/hyprlauncher-toggle"))
 hl.bind(mainMod .. " + V",                             hl.dsp.exec_cmd("~/.local/bin/cliphist-picker"))
 hl.bind(mainMod .. " + CTRL + M",                      hl.dsp.exec_cmd("~/.local/bin/controller-mouse-toggle"))
-hl.bind(mainMod .. " + F",                             hl.dsp.window.fullscreen({ mode = "fullscreen", action = "set" }))
+-- Maximized fullscreen (waybar stays visible), toggle to exit -- matches the
+-- old conf's `fullscreen 1`; SHIFT+F below is the bar-covering fullscreen.
+hl.bind(mainMod .. " + F",                             hl.dsp.window.fullscreen({ mode = "maximized", action = "toggle" }))
 hl.bind(mainMod .. " + SHIFT + F",                     hl.dsp.window.fullscreen())
 hl.bind("Print",                                       hl.dsp.exec_cmd("~/.local/bin/flameshot-hyprland"))
 
