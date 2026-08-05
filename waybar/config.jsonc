@@ -46,7 +46,7 @@
     "format": "{icon}  {volume}%",
     "format-muted": "󰖁  muted",
     "format-icons": { "default": ["󰕿", "󰖀", "󰕾"] },
-    "on-click": "hyprctl dispatch exec '[float; size 800 500; center]' pavucontrol"
+    "on-click": "hyprctl dispatch 'hl.dsp.exec_cmd(\"pavucontrol\", { float = true, size = \"800 500\", center = true })'"
   },
 
   "network": {
@@ -57,7 +57,7 @@
     "format-icons": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"],
     "tooltip-format-wifi": "{essid} ({signalStrength}%)\n{ipaddr}",
     "tooltip-format-ethernet": "{ifname}\n{ipaddr}",
-    "on-click": "hyprctl dispatch exec '[float; size 600 450; center]' 'kitty -e nmtui'"
+    "on-click": "hyprctl dispatch 'hl.dsp.exec_cmd(\"kitty -e nmtui\", { float = true, size = \"600 450\", center = true })'"
   },
 
   "battery": {
