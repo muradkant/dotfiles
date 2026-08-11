@@ -48,7 +48,9 @@ start_daemon() {
     fi
 
     rm -f -- "$socket"
-    hyprctl dispatch exec "$stock_launcher --daemon" >/dev/null
+    # Hyprland >= 0.55 parses `hyprctl dispatch` as Lua; the old bare `exec`
+    # syntax no longer works ("attempt to call a nil value (global 'exec')").
+    hyprctl dispatch "hl.dsp.exec_cmd(\"$stock_launcher --daemon\")" >/dev/null
     for _ in {1..200}; do
         if pgrep -x hyprlauncher >/dev/null && [[ -S "$socket" ]]; then
             return 0

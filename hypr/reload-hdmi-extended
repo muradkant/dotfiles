@@ -14,6 +14,6 @@ hyprctl keyword monitor HDMI-A-1,1920x1080@60,1280x0,1.5
 sleep 0.8
 
 wallpaper="$HOME/Pictures/background.jpg"
-hyprctl dispatch exec \
-    "swaybg -o eDP-1 -i \"$wallpaper\" -o HDMI-A-1 -i \"$wallpaper\""
-hyprctl dispatch exec "waybar"
+# Hyprland >= 0.55 parses `hyprctl dispatch` as Lua; use the Lua API form.
+hyprctl dispatch "hl.dsp.exec_cmd(\"swaybg -o eDP-1 -i \\\"$wallpaper\\\" -o HDMI-A-1 -i \\\"$wallpaper\\\"\")"
+hyprctl dispatch "hl.dsp.exec_cmd(\"waybar\")"
