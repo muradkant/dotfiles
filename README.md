@@ -1,25 +1,32 @@
-# CachyOS workstation
+# Current CachyOS workstation
 
-Versioned Hyprland desktop, editors, shells, local agent services, and AI tool
-profiles. The repository owns configuration; credentials and mutable state stay
-in the home directory.
+This branch tracks the configuration actually used on the machine: CachyOS
+Hyprland with Noctalia, Kitty launching Herdr, Swash screenshots, Emacs,
+Neovim, shell startup, local agent services, and AI tool profiles. Credentials,
+logs, sessions, caches, backups, and other mutable state stay in the home
+directory.
+
+The previous workstation stack is preserved unchanged on
+`archived/CachyOS-legacy`. GitHub only supports archival at repository level,
+so the branch name and this notice are the branch-level archive marker.
 
 ## Restore the workstation
 
 On CachyOS or Arch, clone into a dedicated directory:
 
 ```sh
-git clone --recurse-submodules --branch CachyOS \
-  https://github.com/muradkant/dotfiles.git ~/Projects/dotfiles
+git clone --recurse-submodules --branch current \
+  https://github.com/nottzaid/dotfiles.git ~/Projects/dotfiles
 cd ~/Projects/dotfiles
 ./install.sh --full
 ```
 
-The installer links managed configuration, copies mutable templates, preserves
-replaced files in `~/.local/state/dotfiles/backups`, installs declared Pacman
-packages, provisions pinned Pi/OpenCode/Codex tools, and clones missing projects
-at locked commits. Repeating it is safe. Existing project worktrees, credentials,
-sessions, and user-edited service files are never reset.
+The installer links the live Hyprland/Noctalia/Kitty/Swash/Herdr/editor/shell
+configuration, copies mutable templates, preserves replaced files in
+`~/.local/state/dotfiles/backups`, installs declared Pacman packages, provisions
+pinned Pi/OpenCode/Codex tools, and clones missing projects at locked commits.
+Repeating it is safe. Existing project worktrees, credentials, sessions, and
+user-edited service files are never reset.
 
 `--full` installs independent local services immediately. Hermes and Signal stay
 pending until their credentials exist. Complete that boundary explicitly:

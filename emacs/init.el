@@ -1,4 +1,4 @@
-;;; init.el --- Emacs Configuration
+;;; init.el --- Emacs Configuration -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;; Converted from NixOS configuration for CachyOS/Arch Linux
 
@@ -312,9 +312,8 @@
 (use-package vterm
   :ensure t
   :config
-  ;; Prevent blesh and zellij from auto-starting in vterm
+  ;; Keep shell enhancers out of vterm.
   (setq vterm-environment '("BLESH_AUTO_DISABLE=1"
-                            "ZELLIJ=skip"
                             "INSIDE_EMACS=vterm"))
 
   ;; Custom vterm function

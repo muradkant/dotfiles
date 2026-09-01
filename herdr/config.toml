@@ -1,0 +1,7 @@
+onboarding = false
+[ui]
+agent_panel_sort = "spaces"
+
+[keys]
+next_agent = "alt+j"
+previous_agent = "alt+k"

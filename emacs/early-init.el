@@ -1,4 +1,4 @@
-;;; early-init.el --- Early Initialization
+;;; early-init.el --- Early Initialization -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;; This file is loaded before init.el and package initialization
 

@@ -1,12 +1,9 @@
 [submodule "components/emacs-opencode"]
 	path = components/emacs-opencode
-	url = https://github.com/muradkant/emacs-oc.git
+	url = https://github.com/nottzaid/emacs-oc.git
 [submodule "components/linux-zhixu-controller-fix"]
 	path = components/linux-zhixu-controller-fix
-	url = https://github.com/muradkant/linux-zhixu-controller-fix.git
+	url = https://github.com/nottzaid/linux-zhixu-controller-fix.git
 [submodule "components/yt-stream-workspace"]
 	path = components/yt-stream-workspace
-	url = https://github.com/muradkant/yt-stream-workspace.git
-[submodule "components/hyprlauncher"]
-	path = components/hyprlauncher
-	url = https://github.com/muradkant/hyprlauncher.git
+	url = https://github.com/nottzaid/yt-stream-workspace.git

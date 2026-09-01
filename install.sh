@@ -154,20 +154,26 @@ while IFS='|' read -r source destination; do
     link_path "$ROOT/$source" "$HOME/$destination"
 done <<'EOF'
 hypr/hyprland.lua|.config/hypr/hyprland.lua
-hypr/hyprlauncher.conf|.config/hypr/hyprlauncher.conf
-hypr/hyprlock.conf|.config/hypr/hyprlock.conf
-hypr/hyprtoolkit.conf|.config/hypr/hyprtoolkit.conf
-hypr/reload-hdmi-extended|.config/hypr/reload-hdmi-extended
-hypr/workspaces-hdmi-extended.lua|.config/hypr/workspaces-hdmi-extended.lua
+hypr/config/animations.lua|.config/hypr/config/animations.lua
+hypr/config/autostart.lua|.config/hypr/config/autostart.lua
+hypr/config/binds.lua|.config/hypr/config/binds.lua
+hypr/config/colors.lua|.config/hypr/config/colors.lua
+hypr/config/decorations.lua|.config/hypr/config/decorations.lua
+hypr/config/environment.lua|.config/hypr/config/environment.lua
+hypr/config/inputs.lua|.config/hypr/config/inputs.lua
+hypr/config/misc.lua|.config/hypr/config/misc.lua
+hypr/config/monitors.lua|.config/hypr/config/monitors.lua
+hypr/config/variables.lua|.config/hypr/config/variables.lua
+hypr/config/windowrules.lua|.config/hypr/config/windowrules.lua
+hypr/config/workspaces.lua|.config/hypr/config/workspaces.lua
+hypr/xdph.conf|.config/hypr/xdph.conf
+hypr/yt-stream-workspace.lua|.config/hypr/yt-stream-workspace.lua
 kitty/kitty.conf|.config/kitty/kitty.conf
-waybar/config.jsonc|.config/waybar/config.jsonc
-waybar/style.css|.config/waybar/style.css
-wofi/clipboard.conf|.config/wofi/clipboard.conf
-wofi/clipboard.css|.config/wofi/clipboard.css
-wlogout/layout|.config/wlogout/layout
-wlogout/style.css|.config/wlogout/style.css
-zellij/config.kdl|.config/zellij/config.kdl
-mako/config|.config/mako/config
+kitty/themes/noctalia.conf|.config/kitty/themes/noctalia.conf
+noctalia/config.toml|.config/noctalia/config.toml
+swash/settings.ini|.config/swash/settings.ini
+herdr/config.toml|.config/herdr/config.toml
+uwsm/env|.config/uwsm/env
 nvim/init.lua|.config/nvim/init.lua
 nvim/lua/plugins.lua|.config/nvim/lua/plugins.lua
 nvim/nvim-pack-lock.json|.config/nvim/nvim-pack-lock.json
@@ -189,17 +195,6 @@ link_path "$ROOT/components/emacs-opencode" \
 for source in "$ROOT"/bin/*; do
     link_path "$source" "$HOME/.local/bin/${source##*/}"
 done
-
-# Build the compatibility client only while the packaged CLI lacks --close.
-[[ -x /usr/bin/hyprlauncher ]] ||
-    die "hyprlauncher is missing; install packages first with --packages"
-if ! /usr/bin/hyprlauncher --help 2>&1 | grep -q -- '--close'; then
-    close_client="$HOME/.local/libexec/hyprlauncher-ipc"
-    if [[ ! -x "$close_client" ]] ||
-        ! "$close_client" --help 2>&1 | grep -q -- '--close'; then
-        "$ROOT/hyprlauncher-ipc/build.sh" "$close_client"
-    fi
-fi
 
 if ((INSTALL_STREAMING)); then
     install_pacman_manifest "$ROOT/packages/streaming.txt"

@@ -24,8 +24,9 @@ git -C "$ROOT" submodule status --recursive | while read -r state _; do
 done || fail "submodule revisions"
 
 syntax_failures=0
-for script in "$ROOT/install.sh" "$ROOT/verify.sh" "$ROOT"/bin/* \
-    "$ROOT"/hypr/reload-* "$ROOT/hyprlauncher-ipc/build.sh"; do
+for script in "$ROOT/install.sh" "$ROOT/verify.sh" "$ROOT"/bin/*; do
+    [[ -f "$script" ]] || continue
+    [[ "$script" == *.fish ]] && continue
     if ! bash -n "$script"; then
         fail "Bash syntax: ${script#"$ROOT"/}"
         syntax_failures=$((syntax_failures + 1))
@@ -37,11 +38,14 @@ check_link "$ROOT/.bashrc" "$HOME/.bashrc"
 check_link "$ROOT/.bash_profile" "$HOME/.bash_profile"
 check_link "$ROOT/.profile" "$HOME/.profile"
 check_link "$ROOT/hypr/hyprland.lua" "$HOME/.config/hypr/hyprland.lua"
+check_link "$ROOT/hypr/config/windowrules.lua" "$HOME/.config/hypr/config/windowrules.lua"
+check_link "$ROOT/noctalia/config.toml" "$HOME/.config/noctalia/config.toml"
+check_link "$ROOT/swash/settings.ini" "$HOME/.config/swash/settings.ini"
+check_link "$ROOT/herdr/config.toml" "$HOME/.config/herdr/config.toml"
+check_link "$ROOT/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
 check_link "$ROOT/emacs/init.el" "$HOME/.emacs.d/init.el"
-check_link "$ROOT/zellij/config.kdl" "$HOME/.config/zellij/config.kdl"
 check_link "$ROOT/nvim/nvim-pack-lock.json" "$HOME/.config/nvim/nvim-pack-lock.json"
-check_link "$ROOT/bin/cliphist-picker" "$HOME/.local/bin/cliphist-picker"
-check_link "$ROOT/bin/hyprlauncher-toggle" "$HOME/.local/bin/hyprlauncher-toggle"
+check_link "$ROOT/bin/swash-screenshot" "$HOME/.local/bin/swash-screenshot"
 
 if [[ "$(PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/bin command -v python3)" == /usr/bin/python3 ]]; then
     pass "distribution Python precedence"
@@ -74,27 +78,11 @@ if command -v hyprctl >/dev/null 2>&1 && [[ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}
     fi
 fi
 
-if command -v zellij >/dev/null 2>&1; then
-    if zellij --config "$ROOT/zellij/config.kdl" setup --check >/dev/null 2>&1; then
-        pass "Zellij config"
-    else
-        fail "Zellij config"
-    fi
-fi
-
 if command -v nvim >/dev/null 2>&1; then
     if timeout 300s nvim --headless +qa >/dev/null 2>&1; then
         pass "Neovim config"
     else
         fail "Neovim config"
-    fi
-fi
-
-if [[ -x "$HOME/.local/libexec/hyprlauncher-ipc" ]]; then
-    if "$HOME/.local/libexec/hyprlauncher-ipc" --help 2>&1 | grep -q -- '--close'; then
-        pass "Hyprlauncher close client"
-    else
-        fail "Hyprlauncher close client"
     fi
 fi
 

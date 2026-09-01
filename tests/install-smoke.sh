@@ -49,18 +49,18 @@ grep -Fqx 'YTWS_WALLPAPER="$HOME/Pictures/background.jpg"' \
 [[ ! -L "$HOME/.config/dotfiles/services.env" ]]
 [[ "$(stat -c %a "$HOME/.config/dotfiles/services.env")" == 600 ]]
 [[ "$(stat -c %a "$HOME/.config/searxng/settings.yml")" == 600 ]]
+[[ "$(readlink -f "$HOME/.config/noctalia/config.toml")" == "$ROOT/noctalia/config.toml" ]]
+[[ "$(readlink -f "$HOME/.config/swash/settings.ini")" == "$ROOT/swash/settings.ini" ]]
+[[ "$(readlink -f "$HOME/.config/herdr/config.toml")" == "$ROOT/herdr/config.toml" ]]
+[[ "$(readlink -f "$HOME/.local/bin/swash-screenshot")" == "$ROOT/bin/swash-screenshot" ]]
 controller_target="$(readlink -f "$HOME/.local/bin/controller-mouse-game-guard")"
 expected_controller="$ROOT/components/linux-zhixu-controller-fix/scripts/controller-mouse-game-guard"
 [[ "$controller_target" == "$expected_controller" ]]
 printf '\n# preserved user edit\n' >>"$HOME/.config/yt-stream-workspace/config"
 
-close_client="$HOME/.local/libexec/hyprlauncher-ipc"
-before="$(stat -c '%Y:%s' "$close_client")"
 "$ROOT/install.sh" --streaming --controller --services
 "$ROOT/verify.sh"
-after="$(stat -c '%Y:%s' "$close_client")"
 
-[[ "$before" == "$after" ]]
 [[ "$(find "$XDG_STATE_HOME/dotfiles/backups" -type f -name .bashrc | wc -l)" == 1 ]]
 grep -q '^# preserved user edit$' "$HOME/.config/yt-stream-workspace/config"
 
