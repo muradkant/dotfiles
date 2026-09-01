@@ -7,7 +7,6 @@ BACKUP_ROOT="${XDG_STATE_HOME:-$HOME/.local/state}/dotfiles/backups/$(date +%Y%m
 INSTALL_PACKAGES=0
 INSTALL_STREAMING=0
 INSTALL_CONTROLLER=0
-INSTALL_AGENTS=0
 INSTALL_SERVICES=0
 INSTALL_PROJECTS=0
 
@@ -21,9 +20,8 @@ Existing destinations are moved to a timestamped backup first.
   --packages     install the desktop package manifest with pacman
   --streaming    install/link yt-stream-workspace and its package manifest
   --controller   install the controller desktop mapper (not the DKMS driver)
-  --services     install local Hermes, search, and speech service definitions
+  --services     install local search and speech service definitions
   --projects     clone missing standalone repositories at locked revisions
-  --agents       install pinned Pi/OpenCode/Codex tools and profiles
   --full         install packages and every optional user-space component
   --help         show this help
 
@@ -40,14 +38,12 @@ while (($#)); do
         --controller) INSTALL_CONTROLLER=1 ;;
         --services) INSTALL_SERVICES=1 ;;
         --projects) INSTALL_PROJECTS=1 ;;
-        --agents) INSTALL_AGENTS=1 ;;
         --full)
             INSTALL_PACKAGES=1
             INSTALL_STREAMING=1
             INSTALL_CONTROLLER=1
             INSTALL_SERVICES=1
             INSTALL_PROJECTS=1
-            INSTALL_AGENTS=1
             ;;
         -h|--help)
             usage
@@ -148,6 +144,7 @@ fi
 link_path "$ROOT/.bashrc" "$HOME/.bashrc"
 link_path "$ROOT/.bash_profile" "$HOME/.bash_profile"
 link_path "$ROOT/.profile" "$HOME/.profile"
+link_path "$ROOT/fish/config.fish" "$HOME/.config/fish/config.fish"
 
 # Desktop configuration: individual links leave room for component-owned files.
 while IFS='|' read -r source destination; do
@@ -182,15 +179,12 @@ EOF
 link_path "$ROOT/background.jpg" "$HOME/Pictures/background.jpg"
 link_path "$ROOT/lockscreen.jpg" "$HOME/Pictures/lockscreen.jpg"
 
-# Emacs configuration and locally maintained integration.
+# Emacs configuration.
 link_path "$ROOT/emacs/init.el" "$HOME/.emacs.d/init.el"
 link_path "$ROOT/emacs/early-init.el" "$HOME/.emacs.d/early-init.el"
 for source in "$ROOT"/emacs/lisp/*.el; do
     link_path "$source" "$HOME/.emacs.d/lisp/${source##*/}"
 done
-link_path "$ROOT/components/emacs-opencode" \
-    "$HOME/.emacs.d/site-lisp/emacs-opencode"
-
 # User-facing helpers owned by this repository.
 for source in "$ROOT"/bin/*; do
     link_path "$source" "$HOME/.local/bin/${source##*/}"
@@ -228,8 +222,6 @@ fi
 
 if ((INSTALL_SERVICES)); then
     install_pacman_manifest "$ROOT/packages/services.txt"
-    install_template "$ROOT/services/services.env.example" \
-        "$HOME/.config/dotfiles/services.env"
     "$ROOT/services/searxng/install.sh"
     if [[ "${DOTFILES_SKIP_SERVICE_BUILDS:-0}" != 1 ]]; then
         "$ROOT/services/kokoro/install.sh"
@@ -239,40 +231,13 @@ if ((INSTALL_SERVICES)); then
         "$HOME/.local/libexec/kokoro-tts-server.py"
     link_path "$ROOT/services/searxng/searxng.container" \
         "$HOME/.config/containers/systemd/searxng.container"
-    for source in "$ROOT"/systemd/user/*.service "$ROOT"/systemd/user/*.socket; do
+    for source in "$ROOT"/systemd/user/*.service; do
         link_path "$source" "$HOME/.config/systemd/user/${source##*/}"
     done
-    hermes_unit="$HOME/.config/systemd/user/hermes-gateway.service"
-    if [[ -e "$hermes_unit" ]]; then
-        link_path "$ROOT/systemd/user/hermes-gateway.service.d/10-dotfiles.conf" \
-            "$HOME/.config/systemd/user/hermes-gateway.service.d/10-dotfiles.conf"
-    else
-        note "Hermes gateway activation pending: install and configure Hermes"
-    fi
-
     if [[ "${DOTFILES_SKIP_USER_SERVICES:-0}" != 1 ]]; then
         systemctl --user daemon-reload
-        systemctl --user stop hermes-cdp-browser.service 2>/dev/null || true
-        # `systemctl disable` also removes a linked unit file. Remove only the
-        # old enablement link; the managed browser unit is still required on
-        # demand by hermes-cdp.service.
-        rm -f -- "$HOME/.config/systemd/user/default.target.wants/hermes-cdp-browser.service"
-        systemctl --user enable --now \
-            hermes-cdp.socket kokoro-tts.service searxng.service
-        if [[ -e "$hermes_unit" ]] &&
-            [[ -x "$HOME/.hermes/hermes-agent/venv/bin/python" ]] &&
-            grep -Eq '^SIGNAL_ACCOUNT=\+?[0-9]+$' \
-                "$HOME/.config/dotfiles/services.env"; then
-            systemctl --user enable --now \
-                signal-cli-daemon.service hermes-gateway.service
-        else
-            note "Hermes/Signal activation pending: finish Hermes setup and services.env"
-        fi
+        systemctl --user enable --now kokoro-tts.service searxng.service
     fi
-fi
-
-if ((INSTALL_AGENTS)); then
-    "$ROOT/pi/install.sh" --with-opencode --with-codex
 fi
 
 # Make the corrected login PATH available to newly started user services now;

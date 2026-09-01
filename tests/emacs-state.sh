@@ -28,14 +28,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "$TEST_HOME/.emacs.d/lisp" "$TEST_HOME/.emacs.d/site-lisp" "$PROJECT"
+mkdir -p "$TEST_HOME/.emacs.d/lisp" "$PROJECT"
 ln -s "$ROOT/emacs/init.el" "$TEST_HOME/.emacs.d/init.el"
 ln -s "$ROOT/emacs/early-init.el" "$TEST_HOME/.emacs.d/early-init.el"
 for file in "$ROOT"/emacs/lisp/*.el; do
     ln -s "$file" "$TEST_HOME/.emacs.d/lisp/${file##*/}"
 done
-ln -s "$ROOT/components/emacs-opencode" \
-    "$TEST_HOME/.emacs.d/site-lisp/emacs-opencode"
 printf 'baseline\n' >"$PROJECT/sample.txt"
 
 HOME="$TEST_HOME" \

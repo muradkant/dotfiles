@@ -1,9 +1,0 @@
-[Unit]
-Description=Hermes CDP socket proxy
-Requires=hermes-cdp-browser.service
-After=hermes-cdp-browser.service
-
-[Service]
-Type=notify
-ExecStartPre=%h/.local/bin/wait-for-tcp 127.0.0.1 9223 20
-ExecStart=/usr/lib/systemd/systemd-socket-proxyd --exit-idle-time=60s 127.0.0.1:9223

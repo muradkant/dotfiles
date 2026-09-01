@@ -17,10 +17,12 @@ kitty
 libnotify
 networkmanager
 neovim
+nodejs
 noctalia
 noto-fonts-emoji
 pavucontrol
 playerctl
+pnpm
 power-profiles-daemon
 python
 python-gobject

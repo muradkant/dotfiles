@@ -2,13 +2,6 @@
   "schema": 1,
   "projects": [
     {
-      "name": "hermes-agent",
-      "path": ".hermes/hermes-agent",
-      "url": "https://github.com/NousResearch/hermes-agent.git",
-      "revision": "7426c09beee73bdff94d916015bac71384f6bc92",
-      "group": "runtime"
-    },
-    {
       "name": "retrobat-portable",
       "path": "retrobat-portable",
       "url": "https://github.com/muradkant/retrobat-portable.git",
@@ -21,20 +14,6 @@
       "url": "https://github.com/muradkant/not-news-aggregator.git",
       "revision": "3220d3af5607d27b8d945026f8c0551921a4addc",
       "group": "project"
-    },
-    {
-      "name": "oc-route",
-      "path": "Projects/oc-route",
-      "url": "https://github.com/muradkant/oc-route.git",
-      "revision": "a46914bb3d91051a084cd45a665812510d939218",
-      "group": "project"
-    },
-    {
-      "name": "opencode-source",
-      "path": "Projects/opencode-source",
-      "url": "https://github.com/sst/opencode.git",
-      "revision": "355a0bcf5bb5e6c7baa271a4b2439a40f286e55d",
-      "group": "reference"
     },
     {
       "name": "docker-docs",

@@ -12,8 +12,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for script in "$ROOT/bin/hermes-cdp-browser" "$ROOT/bin/signal-cli-http" \
-    "$ROOT/bin/wait-for-tcp" "$ROOT/services/kokoro/install.sh" \
+for script in "$ROOT/bin/wait-for-tcp" "$ROOT/services/kokoro/install.sh" \
     "$ROOT/services/searxng/install.sh"; do
     bash -n "$script"
 done
@@ -23,17 +22,6 @@ if grep -q '^name = "nvidia-' "$ROOT/services/kokoro/uv.lock"; then
     printf 'CUDA package leaked into the CPU service lock\n' >&2
     exit 1
 fi
-
-mock="$TMP/chrome"
-cat >"$mock" <<'MOCK'
-#!/usr/bin/env bash
-printf '%s\n' "$@"
-MOCK
-chmod +x "$mock"
-args="$(HOME="$TMP/home" HERMES_CHROMIUM_BIN="$mock" \
-    "$ROOT/bin/hermes-cdp-browser")"
-grep -Fqx -- '--remote-debugging-port=9223' <<<"$args"
-grep -Fqx -- '--remote-debugging-address=127.0.0.1' <<<"$args"
 
 port="$(python3 - <<'PY'
 import socket
@@ -69,24 +57,13 @@ grep -q '^# keep$' "$settings"
 [[ "$(stat -c %a "$TMP/config/searxng/limiter.toml")" == 600 ]]
 
 mkdir -p "$TMP/units" "$TMP/config/containers/systemd"
-for unit in "$ROOT"/systemd/user/*.service "$ROOT"/systemd/user/*.socket; do
+for unit in "$ROOT"/systemd/user/*.service; do
     sed \
-        -e 's|%h/.local/bin/hermes-cdp-browser|/usr/bin/true|' \
         -e 's|%h/.local/bin/wait-for-tcp|/usr/bin/true|' \
-        -e 's|%h/.local/bin/signal-cli-http|/usr/bin/true|' \
-        -e 's|%h/.hermes/hermes-agent/venv/bin/python|/usr/bin/true|' \
         -e 's|%h/.local/share/dotfiles/services/kokoro/venv/bin/python|/usr/bin/true|' \
         "$unit" >"$TMP/units/${unit##*/}"
 done
-cat >"$TMP/units/hermes-gateway.service" <<'UNIT'
-[Service]
-ExecStart=/usr/bin/true
-UNIT
-mkdir -p "$TMP/units/hermes-gateway.service.d"
-sed 's|%h/.local/bin/wait-for-tcp|/usr/bin/true|' \
-    "$ROOT/systemd/user/hermes-gateway.service.d/10-dotfiles.conf" \
-    >"$TMP/units/hermes-gateway.service.d/10-dotfiles.conf"
-systemd-analyze --user verify "$TMP"/units/*.service "$TMP"/units/*.socket
+systemd-analyze --user verify "$TMP"/units/*.service
 
 ln -s "$ROOT/services/searxng/searxng.container" \
     "$TMP/config/containers/systemd/searxng.container"

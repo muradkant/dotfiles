@@ -431,24 +431,6 @@
     (with-current-buffer "*scratch*"
       (my/scratch-magic-bind-key))))
 
-;; ============================================================================
-;; OPENCODE HYPRLAND POPUP
-;; ============================================================================
-
-;; Local, non-MELPA package loaded from the flattened repo root.
-;; The package-owned global mode binds C-c o to open the prompt and
-;; C-c h to hide/restore the floating frame.
-;;
-;; First invocation spawns a managed `opencode serve --port 0' subprocess
-;; (Emacs owns it and tears it down on exit). To attach to an externally
-;; started server instead, set `oc-hp-server-port' to that number.
-;;
-;; The Hyprland window rule for the float is in ~/.config/hypr/hyprland.conf.
-(add-to-list 'load-path
-             (expand-file-name "site-lisp/emacs-opencode" user-emacs-directory))
-(when (require 'opencode-hyprland-popup nil t)
-  (opencode-hyprland-popup-global-mode 1))
-
 (when (file-readable-p custom-file)
   (load custom-file nil t))
 

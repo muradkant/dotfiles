@@ -37,6 +37,7 @@ done
 check_link "$ROOT/.bashrc" "$HOME/.bashrc"
 check_link "$ROOT/.bash_profile" "$HOME/.bash_profile"
 check_link "$ROOT/.profile" "$HOME/.profile"
+check_link "$ROOT/fish/config.fish" "$HOME/.config/fish/config.fish"
 check_link "$ROOT/hypr/hyprland.lua" "$HOME/.config/hypr/hyprland.lua"
 check_link "$ROOT/hypr/config/windowrules.lua" "$HOME/.config/hypr/config/windowrules.lua"
 check_link "$ROOT/noctalia/config.toml" "$HOME/.config/noctalia/config.toml"
@@ -47,6 +48,18 @@ check_link "$ROOT/emacs/init.el" "$HOME/.emacs.d/init.el"
 check_link "$ROOT/nvim/nvim-pack-lock.json" "$HOME/.config/nvim/nvim-pack-lock.json"
 check_link "$ROOT/bin/swash-screenshot" "$HOME/.local/bin/swash-screenshot"
 
+if command -v pnpm >/dev/null 2>&1 && command -v uv >/dev/null 2>&1; then
+    pass "pnpm and uv package-manager policy"
+else
+    fail "pnpm and uv package-manager policy"
+fi
+
+for forbidden in npm npx bun yarn corepack pip pip3 pipx poetry pdm hatch rye conda mamba; do
+    if command -v "$forbidden" >/dev/null 2>&1; then
+        fail "forbidden package manager is available: $forbidden"
+    fi
+done
+
 if [[ "$(PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/bin command -v python3)" == /usr/bin/python3 ]]; then
     pass "distribution Python precedence"
 else
@@ -54,7 +67,7 @@ else
 fi
 
 if PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/bin \
-    /usr/bin/python3 /usr/bin/powerprofilesctl get >/dev/null 2>&1; then
+    /usr/bin/python3 /usr/bin/powerprofilesctl --help >/dev/null 2>&1; then
     pass "powerprofilesctl system Python"
 else
     fail "powerprofilesctl system Python"

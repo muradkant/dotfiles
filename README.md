@@ -2,7 +2,7 @@
 
 This branch tracks the configuration actually used on the machine: CachyOS
 Hyprland with Noctalia, Kitty launching Herdr, Swash screenshots, Emacs,
-Neovim, shell startup, local agent services, and AI tool profiles. Credentials,
+Neovim, shell startup, and local search and speech services. Credentials,
 logs, sessions, caches, backups, and other mutable state stay in the home
 directory.
 
@@ -24,29 +24,9 @@ cd ~/Projects/dotfiles
 The installer links the live Hyprland/Noctalia/Kitty/Swash/Herdr/editor/shell
 configuration, copies mutable templates, preserves replaced files in
 `~/.local/state/dotfiles/backups`, installs declared Pacman packages, provisions
-pinned Pi/OpenCode/Codex tools, and clones missing projects at locked commits.
+local services, and clones missing projects at locked commits.
 Repeating it is safe. Existing project worktrees, credentials, sessions, and
 user-edited service files are never reset.
-
-`--full` installs independent local services immediately. Hermes and Signal stay
-pending until their credentials exist. Complete that boundary explicitly:
-
-```sh
-hermes_revision=$(python3 -c '
-import json
-d=json.load(open("projects/lock.json"))
-print(next(p["revision"] for p in d["projects"] if p["name"] == "hermes-agent"))
-')
-~/.hermes/hermes-agent/scripts/install.sh \
-  --commit "$hermes_revision" --skip-setup
-hermes setup
-${EDITOR:-nvim} ~/.config/dotfiles/services.env
-./install.sh --services
-```
-
-`services.env` needs the local Signal account number. The populated file is mode
-600 and untracked. Hermes retains its upstream-generated base unit; dotfiles adds
-only a systemd drop-in for Signal readiness.
 
 The ZhiXu controller's patched DKMS driver is deliberately separate from the
 user-space `--controller` setup because it rebuilds kernel modules as root. Follow
@@ -64,8 +44,7 @@ installing packages or optional systems.
 | `--packages` | Desktop Pacman manifest |
 | `--streaming` | Wayland streaming workspace |
 | `--controller` | Controller mapper and game guard |
-| `--services` | Kokoro, SearXNG, Signal, Hermes service integration |
-| `--agents` | Pinned Pi, OpenCode, Codex, Browse, and profiles |
+| `--services` | Kokoro speech and SearXNG search services |
 | `--projects` | Missing standalone repositories from `projects/lock.json` |
 | `--full` | Every option above |
 
@@ -82,13 +61,12 @@ worktree.
 ./tests/emacs-state.sh
 ./tests/services-static.sh
 ./tests/projects-sync.sh
-./pi/tests/fresh-home.sh
 ```
 
 These tests use disposable homes, validate actual application configs, rebuild
 the Hyprlauncher close client, exercise Emacs recovery, inspect generated systemd
 units, and prove that project synchronization preserves dirty trees. For a clean
-distribution boundary—including Rust tooling—run `./pi/tests/distrobox.sh`.
+distribution boundary, run `./tests/distrobox.sh` after installing Distrobox.
 
 ## Update
 
@@ -99,6 +77,6 @@ git submodule update --init --recursive
 ./verify.sh
 ```
 
-Tool and project upgrades are explicit lock changes followed by their relevant
+Project upgrades are explicit lock changes followed by their relevant
 tests. This keeps a fresh install reproducible without freezing credentials or
 silently overwriting active work.

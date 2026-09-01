@@ -1,3 +1,4 @@
-# Optional local agent/search infrastructure.
+# Optional local search and speech infrastructure.
 podman
+distrobox
 uv
