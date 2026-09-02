@@ -18,6 +18,14 @@
 (when (fboundp 'startup-redirect-eln-cache)
   (startup-redirect-eln-cache (expand-file-name "eln-cache" my/emacs-cache-root)))
 
+;; go-mode's optional Eglot/lsp-mode helpers are not declared to the compiler
+;; in the current upstream release.  Keep this one small mode on byte-code
+;; until upstream adds the declarations, avoiding misleading native warnings.
+(defvar native-comp-jit-compilation-deny-list)
+(with-eval-after-load 'comp
+  (add-to-list 'native-comp-jit-compilation-deny-list
+               "\\(?:^\\|/\\)go-mode\\.el\\'"))
+
 ;; Disable package.el initialization so use-package can control it
 (setq package-enable-at-startup nil)
 
