@@ -12,7 +12,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for script in "$ROOT/bin/wait-for-tcp" "$ROOT/services/kokoro/install.sh" \
+for script in "$ROOT/files/bin/wait-for-tcp" "$ROOT/services/kokoro/install.sh" \
     "$ROOT/services/searxng/install.sh"; do
     bash -n "$script"
 done
@@ -33,12 +33,12 @@ PY
 python3 -m http.server "$port" --bind 127.0.0.1 \
     >"$TMP/http.log" 2>&1 &
 server_pid=$!
-"$ROOT/bin/wait-for-tcp" 127.0.0.1 "$port" 5
-if "$ROOT/bin/wait-for-tcp" 127.0.0.1 1 1; then
+"$ROOT/files/bin/wait-for-tcp" 127.0.0.1 "$port" 5
+if "$ROOT/files/bin/wait-for-tcp" 127.0.0.1 1 1; then
     printf 'hard TCP timeout unexpectedly succeeded\n' >&2
     exit 1
 fi
-"$ROOT/bin/wait-for-tcp" 127.0.0.1 1 1 --soft
+"$ROOT/files/bin/wait-for-tcp" 127.0.0.1 1 1 --soft
 
 HOME="$TMP/home" XDG_CONFIG_HOME="$TMP/config" \
     "$ROOT/services/searxng/install.sh"

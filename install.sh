@@ -14,16 +14,21 @@ usage() {
     cat <<'EOF'
 Usage: ./install.sh [options]
 
-Install the portable user configuration using repository-backed symlinks.
-Existing destinations are moved to a timestamped backup first.
+Apply the Home Manager configuration (flake at the repository root),
+which owns all shell/desktop/editor dotfiles. Provisioning flags add
+the parts Home Manager deliberately does not own (pacman binaries and
+drivers stay with CachyOS/Arch for GPU compatibility).
 
   --packages     install the desktop package manifest with pacman
   --streaming    install/link yt-stream-workspace and its package manifest
   --controller   install the controller desktop mapper (not the DKMS driver)
   --services     install local search and speech service definitions
   --projects     clone missing standalone repositories at locked revisions
-  --full         install packages and every optional user-space component
+  --full         switch Home Manager and enable every optional component
   --help         show this help
+
+Set DOTFILES_SKIP_HM=1 to skip the Home Manager switch (used by tests
+that run against a disposable HOME without nix).
 
 The hardware driver remains an explicit, separately verified operation in
 components/linux-zhixu-controller-fix. Credentials and personal data are never
@@ -140,55 +145,18 @@ if ((INSTALL_PACKAGES)); then
     install_pacman_manifest "$ROOT/packages/desktop.txt"
 fi
 
-# Shell/login layers.
-link_path "$ROOT/.bashrc" "$HOME/.bashrc"
-link_path "$ROOT/.bash_profile" "$HOME/.bash_profile"
-link_path "$ROOT/.profile" "$HOME/.profile"
-link_path "$ROOT/fish/config.fish" "$HOME/.config/fish/config.fish"
-
-# Desktop configuration: individual links leave room for component-owned files.
-while IFS='|' read -r source destination; do
-    link_path "$ROOT/$source" "$HOME/$destination"
-done <<'EOF'
-hypr/hyprland.lua|.config/hypr/hyprland.lua
-hypr/config/animations.lua|.config/hypr/config/animations.lua
-hypr/config/autostart.lua|.config/hypr/config/autostart.lua
-hypr/config/binds.lua|.config/hypr/config/binds.lua
-hypr/config/colors.lua|.config/hypr/config/colors.lua
-hypr/config/decorations.lua|.config/hypr/config/decorations.lua
-hypr/config/environment.lua|.config/hypr/config/environment.lua
-hypr/config/inputs.lua|.config/hypr/config/inputs.lua
-hypr/config/misc.lua|.config/hypr/config/misc.lua
-hypr/config/monitors.lua|.config/hypr/config/monitors.lua
-hypr/config/variables.lua|.config/hypr/config/variables.lua
-hypr/config/windowrules.lua|.config/hypr/config/windowrules.lua
-hypr/config/workspaces.lua|.config/hypr/config/workspaces.lua
-hypr/xdph.conf|.config/hypr/xdph.conf
-hypr/yt-stream-workspace.lua|.config/hypr/yt-stream-workspace.lua
-kitty/kitty.conf|.config/kitty/kitty.conf
-kitty/themes/noctalia.conf|.config/kitty/themes/noctalia.conf
-noctalia/config.toml|.config/noctalia/config.toml
-swash/settings.ini|.config/swash/settings.ini
-herdr/config.toml|.config/herdr/config.toml
-uwsm/env|.config/uwsm/env
-nvim/init.lua|.config/nvim/init.lua
-nvim/lua/plugins.lua|.config/nvim/lua/plugins.lua
-nvim/nvim-pack-lock.json|.config/nvim/nvim-pack-lock.json
-EOF
-
-link_path "$ROOT/background.jpg" "$HOME/Pictures/background.jpg"
-link_path "$ROOT/lockscreen.jpg" "$HOME/Pictures/lockscreen.jpg"
-
-# Emacs configuration.
-link_path "$ROOT/emacs/init.el" "$HOME/.emacs.d/init.el"
-link_path "$ROOT/emacs/early-init.el" "$HOME/.emacs.d/early-init.el"
-for source in "$ROOT"/emacs/lisp/*.el; do
-    link_path "$source" "$HOME/.emacs.d/lisp/${source##*/}"
-done
-# User-facing helpers owned by this repository.
-for source in "$ROOT"/bin/*; do
-    link_path "$source" "$HOME/.local/bin/${source##*/}"
-done
+# Shell, desktop, and editor configuration is owned by Home Manager now
+# (flake at the repository root). This replaces the old repository-symlink
+# farm; content lives in files/ and modules/, deployed with -b backups.
+if [[ "${DOTFILES_SKIP_HM:-0}" == 1 ]]; then
+    note "skipped home-manager switch (DOTFILES_SKIP_HM=1)"
+elif command -v home-manager >/dev/null 2>&1; then
+    home-manager switch --flake "$ROOT"
+elif command -v nix >/dev/null 2>&1; then
+    nix run home-manager/master -- switch --flake "$ROOT"
+else
+    die "home-manager switch requires nix: install nix, then rerun"
+fi
 
 if ((INSTALL_STREAMING)); then
     install_pacman_manifest "$ROOT/packages/streaming.txt"
@@ -240,10 +208,12 @@ if ((INSTALL_SERVICES)); then
     fi
 fi
 
-# Make the corrected login PATH available to newly started user services now;
-# the next login establishes it naturally for the whole session.
+# Make the Home Manager login environment available to newly started user
+# services now; the next login establishes it naturally for the session.
 # shellcheck disable=SC1091
-. "$ROOT/.profile"
+if [[ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]]; then
+    . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+fi
 if [[ "${DOTFILES_SKIP_SESSION_IMPORT:-0}" != 1 ]]; then
     systemctl --user import-environment PATH 2>/dev/null || true
 fi

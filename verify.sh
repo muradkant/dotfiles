@@ -8,13 +8,27 @@ failures=0
 pass() { printf 'PASS %s\n' "$*"; }
 fail() { printf 'FAIL %s\n' "$*" >&2; failures=$((failures + 1)); }
 
-check_link() {
-    local source="$1" destination="$2"
-    if [[ -L "$destination" ]] &&
-        [[ "$(readlink -f -- "$destination" 2>/dev/null || true)" == "$(readlink -f -- "$source")" ]]; then
-        pass "${destination#"$HOME"/}"
+HM_GEN="$(readlink -f -- "${HOME}/.local/state/nix/profiles/home-manager" 2>/dev/null || true)"
+if [[ "${DOTFILES_SKIP_HM:-0}" == 1 ]]; then
+    HM_GEN=""
+elif [[ -z "$HM_GEN" || ! -e "$HM_GEN/home-files" ]]; then
+    fail "no active Home Manager generation"
+    HM_GEN=""
+fi
+
+check_managed() {
+    local rel="$1" dest resolved="" expected=""
+    dest="$HOME/$rel"
+    if [[ -n "$HM_GEN" ]]; then
+        expected="$(readlink -f -- "$HM_GEN/home-files/$rel" 2>/dev/null || true)"
+    fi
+    if [[ -n "$expected" && -L "$dest" ]]; then
+        resolved="$(readlink -f -- "$dest" 2>/dev/null || true)"
+    fi
+    if [[ -n "$expected" && "$resolved" == "$expected" ]]; then
+        pass "$rel"
     else
-        fail "${destination#"$HOME"/} is not linked to repository source"
+        fail "$rel is not deployed from the current Home Manager generation"
     fi
 }
 
@@ -24,9 +38,8 @@ git -C "$ROOT" submodule status --recursive | while read -r state _; do
 done || fail "submodule revisions"
 
 syntax_failures=0
-for script in "$ROOT/install.sh" "$ROOT/verify.sh" "$ROOT"/bin/*; do
+for script in "$ROOT/install.sh" "$ROOT/verify.sh" "$ROOT"/files/bin/* "$ROOT"/tests/*.sh; do
     [[ -f "$script" ]] || continue
-    [[ "$script" == *.fish ]] && continue
     if ! bash -n "$script"; then
         fail "Bash syntax: ${script#"$ROOT"/}"
         syntax_failures=$((syntax_failures + 1))
@@ -34,19 +47,27 @@ for script in "$ROOT/install.sh" "$ROOT/verify.sh" "$ROOT"/bin/*; do
 done
 ((syntax_failures == 0)) && pass "Bash syntax"
 
-check_link "$ROOT/.bashrc" "$HOME/.bashrc"
-check_link "$ROOT/.bash_profile" "$HOME/.bash_profile"
-check_link "$ROOT/.profile" "$HOME/.profile"
-check_link "$ROOT/fish/config.fish" "$HOME/.config/fish/config.fish"
-check_link "$ROOT/hypr/hyprland.lua" "$HOME/.config/hypr/hyprland.lua"
-check_link "$ROOT/hypr/config/windowrules.lua" "$HOME/.config/hypr/config/windowrules.lua"
-check_link "$ROOT/noctalia/config.toml" "$HOME/.config/noctalia/config.toml"
-check_link "$ROOT/swash/settings.ini" "$HOME/.config/swash/settings.ini"
-check_link "$ROOT/herdr/config.toml" "$HOME/.config/herdr/config.toml"
-check_link "$ROOT/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
-check_link "$ROOT/emacs/init.el" "$HOME/.emacs.d/init.el"
-check_link "$ROOT/nvim/nvim-pack-lock.json" "$HOME/.config/nvim/nvim-pack-lock.json"
-check_link "$ROOT/bin/swash-screenshot" "$HOME/.local/bin/swash-screenshot"
+# Every path the old symlink farm owned must now resolve into the
+# Home Manager generation; resolving under $ROOT or dangling fails.
+# Skipped when DOTFILES_SKIP_HM=1 (disposable-HOME tests without nix).
+if [[ "${DOTFILES_SKIP_HM:-0}" != 1 ]]; then
+check_managed ".bashrc"
+check_managed ".bash_profile"
+check_managed ".profile"
+check_managed ".config/fish/config.fish"
+check_managed ".config/hypr/hyprland.lua"
+check_managed ".config/hypr/config/windowrules.lua"
+check_managed ".config/noctalia/config.toml"
+check_managed ".config/swash/settings.ini"
+check_managed ".config/herdr/config.toml"
+check_managed ".config/kitty/kitty.conf"
+check_managed ".emacs.d/init.el"
+check_managed ".config/nvim/nvim-pack-lock.json"
+check_managed ".local/bin/swash-screenshot"
+check_managed ".local/bin/wait-for-tcp"
+check_managed "Pictures/background.jpg"
+check_managed "Pictures/lockscreen.jpg"
+fi
 
 if command -v pnpm >/dev/null 2>&1 && command -v uv >/dev/null 2>&1; then
     pass "pnpm and uv package-manager policy"
@@ -74,7 +95,15 @@ else
 fi
 
 if command -v Hyprland >/dev/null 2>&1; then
-    if Hyprland --verify-config --config "$ROOT/hypr/hyprland.lua" 2>&1 |
+    if [[ "${DOTFILES_SKIP_HM:-0}" != 1 ]]; then
+        if Hyprland --verify-config --config "$HOME/.config/hypr/hyprland.lua" 2>&1 |
+            grep -q 'config ok'; then
+            pass "Hyprland live config"
+        else
+            fail "Hyprland live config"
+        fi
+    fi
+    if Hyprland --verify-config --config "$ROOT/files/hypr/hyprland.lua" 2>&1 |
         grep -q 'config ok'; then
         pass "Hyprland tracked config"
     else
@@ -103,4 +132,4 @@ if ((failures)); then
     printf '%d verification failure(s)\n' "$failures" >&2
     exit 1
 fi
-printf 'All portable dotfile checks passed.\n'
+printf 'All Home Manager workstation checks passed.\n'

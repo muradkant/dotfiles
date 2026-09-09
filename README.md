@@ -12,7 +12,8 @@ so the branch name and this notice are the branch-level archive marker.
 
 ## Restore the workstation
 
-On CachyOS or Arch, clone into a dedicated directory:
+On CachyOS or Arch, clone into a dedicated directory (Nix with flakes
+required for the dotfiles step):
 
 ```sh
 git clone --recurse-submodules --branch current \
@@ -21,12 +22,13 @@ cd ~/Projects/dotfiles
 ./install.sh --full
 ```
 
-The installer links the live Hyprland/Noctalia/Kitty/Swash/Herdr/editor/shell
-configuration, copies mutable templates, preserves replaced files in
-`~/.local/state/dotfiles/backups`, installs declared Pacman packages, provisions
-local services, and clones missing projects at locked commits.
-Repeating it is safe. Existing project worktrees, credentials, sessions, and
-user-edited service files are never reset.
+With no option, `install.sh` runs `home-manager switch --flake .`, which
+deploys all shell/desktop/editor dotfiles from `files/` via `modules/`.
+The `--packages/--streaming/--controller/--services/--projects` flags add
+the parts Home Manager deliberately does not own: pacman binaries and
+drivers (kept off Nix for GPU compatibility), local services, and locked
+project checkouts. Repeating it is safe. Existing project worktrees,
+credentials, sessions, and user-edited service files are never reset.
 
 The ZhiXu controller's patched DKMS driver is deliberately separate from the
 user-space `--controller` setup because it rebuilds kernel modules as root. Follow
@@ -36,8 +38,9 @@ Wi-Fi configuration.
 
 ## Install less
 
-With no option, `install.sh` applies the desktop, shell, and editor links without
-installing packages or optional systems.
+With no option, `install.sh` only switches the Home Manager generation
+(dotfiles, no packages or optional systems). Set `DOTFILES_SKIP_HM=1`
+to skip the switch (used by tests on disposable homes without nix).
 
 | Option | Adds |
 | --- | --- |
@@ -46,7 +49,23 @@ installing packages or optional systems.
 | `--controller` | Controller mapper and game guard |
 | `--services` | Kokoro speech and SearXNG search services |
 | `--projects` | Missing standalone repositories from `projects/lock.json` |
-| `--full` | Every option above |
+| `--full` | Home Manager switch plus every option above |
+
+## Dotfiles via Home Manager
+
+This repository is a Home Manager flake (`flake.nix`, `home.nix`,
+`modules/`, `files/`). Edit config text under `files/` or options under
+`modules/`, then apply with:
+
+```sh
+home-manager switch --flake ~/Projects/dotfiles
+```
+
+`hypr/` and `kitty/` must stay `recursive` directory sources: Home
+Manager stages every per-file source as its own isolated store object,
+and Hyprland resolves Lua `require()` next to the canonicalized entry
+file, so per-file links break it. Raw files only — binaries, GPU, and
+drivers stay with pacman/CachyOS (`home.packages` is empty on purpose).
 
 Standalone projects remain independent repositories. Directly consumed code is
 pinned as a submodule. `projects/sync.sh` checks remote, commit, and cleanliness;
