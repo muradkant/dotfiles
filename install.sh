@@ -148,6 +148,15 @@ fi
 # Shell, desktop, and editor configuration is owned by Home Manager now
 # (flake at the repository root). This replaces the old repository-symlink
 # farm; content lives in files/ and modules/, deployed with -b backups.
+# Nix lives outside the default PATH in non-login shells, so ensure its
+# profile bins are visible before probing (appended: never shadow system).
+for nix_bin in "$HOME/.nix-profile/bin" /nix/var/nix/profiles/default/bin; do
+    case ":${PATH}:" in
+        *:"$nix_bin":*) ;;
+        *) PATH="$PATH:$nix_bin" ;;
+    esac
+done
+export PATH
 if [[ "${DOTFILES_SKIP_HM:-0}" == 1 ]]; then
     note "skipped home-manager switch (DOTFILES_SKIP_HM=1)"
 elif command -v home-manager >/dev/null 2>&1; then
@@ -210,9 +219,12 @@ fi
 
 # Make the Home Manager login environment available to newly started user
 # services now; the next login establishes it naturally for the session.
-# shellcheck disable=SC1091
+# The generated script is not `set -u` clean, so relax nounset around it.
 if [[ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]]; then
+    set +u
+    # shellcheck disable=SC1091
     . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+    set -u
 fi
 if [[ "${DOTFILES_SKIP_SESSION_IMPORT:-0}" != 1 ]]; then
     systemctl --user import-environment PATH 2>/dev/null || true

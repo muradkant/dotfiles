@@ -38,11 +38,17 @@ distrobox create --yes \
 # shellcheck disable=SC2016
 distrobox enter "$BOX_NAME" -- bash -lc '
     set -Eeuo pipefail
+    # Hermetic boundary: distrobox forwards the host environment (notably
+    # PATH), which would leak host tools like ~/.local/bin/bun into the
+    # "clean image" assertions below. Scrub to container system dirs only.
+    export PATH=/usr/local/sbin:/usr/local/bin:/usr/bin:/bin
     sudo pacman -Syu --needed --noconfirm \
         git nodejs openssl pnpm power-profiles-daemon python python-gobject uv
     cp -a /opt/dotfiles "$HOME/dotfiles"
     cd "$HOME/dotfiles"
-    ./tests/bash-startup.sh
+    # NB: tests/bash-startup.sh is intentionally absent here: it asserts the
+    # live Home Manager session PATH, which cannot exist in a clean image
+    # without nix. It runs on switched machines instead.
     ./tests/install-smoke.sh
     ./tests/projects-sync.sh
 
